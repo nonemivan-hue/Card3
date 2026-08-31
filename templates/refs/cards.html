@@ -103,9 +103,14 @@
                         <td>{{ owners.get(card.owner_id, {}).full_name if card.owner_id else '' }}</td>
                         <td>{{ applicants.get(card.applicant_id, {}).full_name if card.applicant_id else '' }}</td>
                         <td>
-                            <form method="POST" action="{{ url_for('ref_cards_delete', card_id=card.id) }}" onsubmit="return confirm('Удалить карту?');">
-                                <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
-                            </form>
+                            <div class="d-flex gap-1">
+                                <a href="{{ url_for('ref_cards_edit', card_id=card.id) }}" class="btn btn-sm btn-outline-primary" title="Редактировать">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('ref_cards_delete', card_id=card.id) }}" onsubmit="return confirm('Удалить карту?');">
+                                    <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     {% else %}

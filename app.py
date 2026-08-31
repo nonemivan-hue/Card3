@@ -18,7 +18,7 @@ UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
 os.makedirs(BACKUP_DIR, exist_ok=True)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-from app.storage import load_all, save_all, insert, update, delete, get_next_number
+from app.storage import load_all, save_all, insert, update, delete, get_next_number, find_one
 from app.models import (
     get_cards, get_card_by_number, create_or_update_card,
     get_card_types, get_card_type_by_id, get_card_type_by_name,
@@ -233,6 +233,40 @@ def ref_cards():
                            search_number=search_number,
                            search_type=search_type,
                            sort_by=sort_by)
+
+
+@app.route("/refs/cards/edit/<card_id>", methods=["GET", "POST"])
+@login_required
+def ref_cards_edit(card_id):
+    card = find_one("cards", lambda c: c.get("id") == card_id)
+    if not card:
+        flash("Карта не найдена", "danger")
+        return redirect(url_for("ref_cards"))
+    
+    if request.method == "POST":
+        card_number = request.form.get("card_number", "").strip()
+        if not card_number or len(card_number) != 19 or not card_number.isdigit():
+            flash("Номер карты должен содержать ровно 19 цифр", "danger")
+            return redirect(url_for("ref_cards_edit", card_id=card_id))
+        
+        # Check if another card already has this number
+        existing = get_card_by_number(card_number)
+        if existing and existing["id"] != card_id:
+            flash("Карта с таким номером уже существует", "danger")
+            return redirect(url_for("ref_cards_edit", card_id=card_id))
+        
+        update("cards", lambda c: c.get("id") == card_id, {
+            "card_number": card_number,
+            "card_type_id": request.form.get("card_type_id", ""),
+            "status": request.form.get("status", ""),
+            "updated_at": now_iso()
+        })
+        flash("Карта обновлена", "success")
+        log_action(session.get("user_id"), "UPDATE_CARD", f"Updated card {card_number}")
+        return redirect(url_for("ref_cards"))
+    
+    card_types = get_card_types()
+    return render_template("refs/cards_edit.html", card=card, card_types=card_types)
 
 
 @app.route("/refs/cards/delete/<card_id>", methods=["POST"])
@@ -1312,6 +1346,42 @@ def export_edo():
     wb.save(output)
     output.seek(0)
     return send_file(output, download_name=f"edo_{start_date}_{end_date}.xlsx", as_attachment=True)
+
+
+@app.route("/reports/export/edo-word")
+@login_required
+def export_edo_word():
+    start_date = request.args.get("start_date", "")
+    end_date = request.args.get("end_date", "")
+    if not start_date or not end_date:
+        flash("Укажите период", "warning")
+        return redirect(url_for("report_edo"))
+    report = get_edo_report(start_date, end_date)
+    
+    try:
+        from docx import Document
+    except ImportError:
+        flash("python-docx не установлен", "danger")
+        return redirect(url_for("report_edo"))
+    
+    doc = Document()
+    doc.add_heading(f'Отчет для ЭДО за период с {start_date} по {end_date}', 0)
+    
+    table = doc.add_table(rows=1, cols=2)
+    table.style = 'Table Grid'
+    hdr_cells = table.rows[0].cells
+    hdr_cells[0].text = 'Вид карты'
+    hdr_cells[1].text = 'Номера карт'
+    
+    for row in report:
+        row_cells = table.add_row().cells
+        row_cells[0].text = row.get("card_type_name", "")
+        row_cells[1].text = row.get("numbers", "")
+    
+    output = BytesIO()
+    doc.save(output)
+    output.seek(0)
+    return send_file(output, download_name=f"edo_{start_date}_{end_date}.docx", as_attachment=True)
 
 
 @app.route("/reports/export/summary")

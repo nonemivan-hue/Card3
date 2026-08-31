@@ -423,7 +423,7 @@ def get_period_report(start_date, end_date):
     for ct_id in sorted(all_ct_ids):
         ct = get_card_type_by_id(ct_id)
         report.append({
-            "card_type_name": ct.get("report_name", "") or ct.get("name", "Не указан") if ct else "Не указан",
+            "card_type_name": ct.get("name", "Не указан") if ct else "Не указан",
             "print_count": print_counts.get(ct_id, 0),
             "issue_count": issue_counts.get(ct_id, 0)
         })
