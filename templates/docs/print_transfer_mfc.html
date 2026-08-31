@@ -129,7 +129,6 @@
     <div class="info-block">
         <p><span class="label">Отправитель:</span> {{ our_org }}</p>
         <p><span class="label">Подготовил:</span> {{ employee.full_name if employee else '______________________________' }}</p>
-        <p><span class="label">Автор:</span> {{ author.full_name if author else '—' }}</p>
         <p><span class="label">Услуга:</span> выдача электронного проездного билета отдельным категориям граждан в Краснодарском крае</p>
         <p><span class="label">Приемщик:</span> {{ mfc.name if mfc else '______________________________' }}{% if mfc and mfc.code %}, {{ mfc.code }}{% endif %}</p>
     </div>
