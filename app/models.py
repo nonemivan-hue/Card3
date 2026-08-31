@@ -160,6 +160,8 @@ def get_mfc_by_id(mfc_id):
 
 
 # ============== EMPLOYEES ==============
+_active_sessions = {}
+
 def get_employees():
     return load_all("employees")
 
@@ -170,6 +172,42 @@ def get_employee_by_id(e_id):
 
 def get_employee_by_login(login):
     return find_one("employees", lambda e: e.get("login") == login)
+
+
+def register_session(user_id, session_id):
+    """Register an active user session."""
+    from datetime import datetime
+    _active_sessions[session_id] = {
+        "user_id": user_id,
+        "last_activity": datetime.now().isoformat()
+    }
+
+
+def unregister_session(session_id):
+    """Unregister a user session."""
+    if session_id in _active_sessions:
+        del _active_sessions[session_id]
+
+
+def update_session_activity(session_id):
+    """Update last activity time for a session."""
+    if session_id in _active_sessions:
+        from datetime import datetime
+        _active_sessions[session_id]["last_activity"] = datetime.now().isoformat()
+
+
+def get_active_users():
+    """Get list of currently active users."""
+    from datetime import datetime, timedelta
+    # Consider sessions active if they had activity in the last 15 minutes
+    cutoff = (datetime.now() - timedelta(minutes=15)).isoformat()
+    active_user_ids = set()
+    for sess in _active_sessions.values():
+        if sess.get("last_activity", "") > cutoff:
+            active_user_ids.add(sess["user_id"])
+    
+    employees = get_employees()
+    return [e for e in employees if e.get("id") in active_user_ids]
 
 
 def check_permission(employee, resource, level="view"):
@@ -423,7 +461,7 @@ def get_period_report(start_date, end_date):
     for ct_id in sorted(all_ct_ids):
         ct = get_card_type_by_id(ct_id)
         report.append({
-            "card_type_name": ct.get("name", "Не указан") if ct else "Не указан",
+            "card_type_name": ct.get("report_name", "") or ct.get("name", "Не указан") if ct else "Не указан",
             "print_count": print_counts.get(ct_id, 0),
             "issue_count": issue_counts.get(ct_id, 0)
         })

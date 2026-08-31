@@ -53,6 +53,11 @@ def login_required(f):
         if "user_id" not in session:
             flash("Необходима авторизация", "warning")
             return redirect(url_for("login"))
+        # Register/update active session
+        from app.models import register_session, update_session_activity
+        session_id = str(session.get("user_id", ""))
+        register_session(session["user_id"], session_id)
+        update_session_activity(session_id)
         return f(*args, **kwargs)
     return decorated
 
@@ -100,6 +105,9 @@ def inject_globals():
     user = None
     if "user_id" in session:
         user = get_employee_by_id(session["user_id"])
+    # Get active users for display
+    from app.models import get_active_users
+    active_users = get_active_users()
     return {
         "card_statuses": CARD_STATUSES,
         "document_types": DOCUMENT_TYPES,
@@ -107,7 +115,8 @@ def inject_globals():
         "current_user": user,
         "is_admin": user and "admin" in user.get("roles", []),
         "is_issue_user": is_issue_user(),
-        "is_reports_user": is_reports_user()
+        "is_reports_user": is_reports_user(),
+        "active_users": active_users
     }
 
 
@@ -138,6 +147,10 @@ def login():
 def logout():
     if "user_id" in session:
         log_action(session["user_id"], "LOGOUT", "User logged out")
+        # Unregister session
+        from app.models import unregister_session
+        session_id = str(session.get("user_id", ""))
+        unregister_session(session_id)
     session.clear()
     flash("Вы вышли из системы", "info")
     return redirect(url_for("login"))
