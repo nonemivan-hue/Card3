@@ -224,10 +224,14 @@ def check_permission(employee, resource, level="view"):
 
 
 # ============== DOCUMENTS ==============
-def get_documents(doc_type=None):
+def get_documents(doc_type=None, date_from=None, date_to=None):
     docs = load_all("documents")
     if doc_type:
         docs = [d for d in docs if d.get("doc_type") == doc_type]
+    if date_from:
+        docs = [d for d in docs if d.get("doc_date", "") >= date_from]
+    if date_to:
+        docs = [d for d in docs if d.get("doc_date", "") <= date_to]
     return sorted(docs, key=lambda x: x.get("doc_date", ""), reverse=True)
 
 

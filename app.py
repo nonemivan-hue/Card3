@@ -548,18 +548,21 @@ def api_employees():
 @login_required
 def docs_journal():
     doc_type = request.args.get("type", "")
+    date_from = request.args.get("date_from", "")
+    date_to = request.args.get("date_to", "")
+    
     if is_issue_user():
         # Issue users can only see issue documents
         if doc_type and doc_type != "issue":
             flash("Доступ запрещен", "danger")
             return redirect(url_for("docs_journal"))
-        items = get_documents(doc_type="issue")
+        items = get_documents(doc_type="issue", date_from=date_from, date_to=date_to)
         doc_type = "issue"
     else:
-        items = get_documents(doc_type=doc_type if doc_type else None)
+        items = get_documents(doc_type=doc_type if doc_type else None, date_from=date_from, date_to=date_to)
     employees = get_employees()
     emp_map = {e["id"]: e for e in employees}
-    return render_template("docs/journal.html", items=items, doc_type=doc_type, emp_map=emp_map)
+    return render_template("docs/journal.html", items=items, doc_type=doc_type, emp_map=emp_map, date_from=date_from, date_to=date_to)
 
 
 @app.route("/docs/create/<doc_type>", methods=["GET", "POST"])
