@@ -95,6 +95,9 @@
                                     <button type="button" class="btn btn-outline-secondary" onclick="pickCard(1)">
                                         <i class="bi bi-search"></i>
                                     </button>
+                                    <button type="button" class="btn btn-outline-info" onclick="readCardFromReader(1)" title="Считать с устройства">
+                                        <i class="bi bi-wifi"></i>
+                                    </button>
                                     {% endif %}
                                 </div>
                             </td>
@@ -178,6 +181,7 @@ function addLine() {
     html += `<td><div class="input-group"><input type="text" name="line_${lineCount}_card_number" class="form-control" required onblur="onCardNumberBlur(this)">`;
     if (docType !== 'receipt') {
         html += `<button type="button" class="btn btn-outline-secondary" onclick="pickCard(${lineCount})"><i class="bi bi-search"></i></button>`;
+        html += `<button type="button" class="btn btn-outline-info" onclick="readCardFromReader(${lineCount})" title="Считать с устройства"><i class="bi bi-wifi"></i></button>`;
     }
     html += `</div></td>`;
 
@@ -301,5 +305,58 @@ function onCardNumberBlur(input) {
 document.querySelectorAll('input[name^="line_"][name$="_card_number"]').forEach(input => {
     input.addEventListener('blur', () => onCardNumberBlur(input));
 });
+
+// Card reader function for ACR1281U and compatible readers
+let readInProgress = false;
+function readCardFromReader(lineIdx) {
+    if (readInProgress) {
+        alert('Считывание уже выполняется');
+        return;
+    }
+    
+    readInProgress = true;
+    const row = document.querySelector(`tr[data-idx="${lineIdx}"]`);
+    const input = row.querySelector(`[name="line_${lineIdx}_card_number"]`);
+    
+    // Simulate card reader input - in real implementation this would communicate with the device
+    // For ACR1281U, we use WebUSB or a local service to read the card
+    // The reader typically acts as a keyboard wedge, so we listen for input
+    
+    // Show waiting message
+    const originalPlaceholder = input.placeholder;
+    input.placeholder = 'Приложите карту к считывателю...';
+    input.focus();
+    
+    // Listen for card number input from reader (typically ends with Enter)
+    let cardNumberBuffer = '';
+    const handleKeydown = function(e) {
+        if (e.key === 'Enter') {
+            if (cardNumberBuffer.trim().length > 0) {
+                input.value = cardNumberBuffer.trim();
+                // Trigger blur to fetch card details
+                onCardNumberBlur(input);
+            }
+            // Clean up
+            document.removeEventListener('keydown', handleKeydown);
+            input.placeholder = originalPlaceholder;
+            readInProgress = false;
+            e.preventDefault();
+        } else if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            cardNumberBuffer += e.key;
+        }
+    };
+    
+    document.addEventListener('keydown', handleKeydown);
+    
+    // Timeout after 30 seconds
+    setTimeout(() => {
+        if (readInProgress) {
+            document.removeEventListener('keydown', handleKeydown);
+            input.placeholder = originalPlaceholder;
+            readInProgress = false;
+            alert('Время ожидания истекло. Попробуйте снова.');
+        }
+    }, 30000);
+}
 </script>
 {% endblock %}

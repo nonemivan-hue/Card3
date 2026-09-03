@@ -1,10 +1,1 @@
-```
-# Compiled Python files
-*.pyc
-__pycache__/
-
-# Environment files
-.env
-.env.local
-*.env.*
-```
+Nothing needs to be added to .gitignore since the changes only include HTML template files which are source files and not build artifacts, dependencies, or temporary files.
