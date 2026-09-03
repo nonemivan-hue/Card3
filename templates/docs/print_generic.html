@@ -43,11 +43,11 @@
         <thead>
             <tr>
                 <th style="width:50px">№ п/п</th>
-                <th>Номер карты</th>
-                <th>Вид карты</th>
                 {% if doc.doc_type in ['print', 'issue', 'transfer_mfc', 'return_mfc'] %}
                 <th>ФИО владельца</th>
                 {% endif %}
+                <th>Номер карты</th>
+                <th>Вид карты</th>
                 {% if doc.doc_type in ['issue', 'transfer_mfc', 'return_mfc'] %}
                 <th>ФИО заявителя</th>
                 {% endif %}
@@ -57,11 +57,11 @@
             {% for line in lines %}
             <tr>
                 <td>{{ line.line_no }}</td>
-                <td>{{ line.card_number }}</td>
-                <td>{{ line.card_type_name }}</td>
                 {% if doc.doc_type in ['print', 'issue', 'transfer_mfc', 'return_mfc'] %}
                 <td>{{ line.owner_name }}</td>
                 {% endif %}
+                <td>{{ line.card_number }}</td>
+                <td>{{ line.card_type_name }}</td>
                 {% if doc.doc_type in ['issue', 'transfer_mfc', 'return_mfc'] %}
                 <td>{{ line.applicant_name or line.owner_name }}</td>
                 {% endif %}

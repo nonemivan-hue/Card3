@@ -107,9 +107,61 @@
                                 <a href="{{ url_for('ref_cards_edit', card_id=card.id) }}" class="btn btn-sm btn-outline-primary" title="Редактировать">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                <button type="button" class="btn btn-sm btn-outline-info" title="История" 
+                                        data-bs-toggle="modal" data-bs-target="#historyModal{{ card.id }}">
+                                    <i class="bi bi-clock-history"></i>
+                                </button>
                                 <form method="POST" action="{{ url_for('ref_cards_delete', card_id=card.id) }}" onsubmit="return confirm('Удалить карту?');">
                                     <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
                                 </form>
+                            </div>
+                            
+                            <!-- History Modal -->
+                            <div class="modal fade" id="historyModal{{ card.id }}" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">История карты {{ card.card_number }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            {% set history = card_history.get(card.id, []) %}
+                                            {% if history %}
+                                            <table class="table table-sm table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Дата</th>
+                                                        <th>Документ</th>
+                                                        <th>Тип</th>
+                                                        <th>Статус</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for h in history %}
+                                                    <tr>
+                                                        <td>{{ h.doc_date }}</td>
+                                                        <td>{{ h.doc_number }}</td>
+                                                        <td>{{ h.doc_type }}</td>
+                                                        <td>
+                                                            {% if h.status == 'posted' %}
+                                                            <span class="badge bg-success">Проведен</span>
+                                                            {% else %}
+                                                            <span class="badge bg-secondary">Черновик</span>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                            {% else %}
+                                            <p class="text-muted text-center">История отсутствует</p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </td>
                     </tr>
