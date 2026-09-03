@@ -239,6 +239,25 @@ def ref_cards():
     if search_type:
         cards = [c for c in cards if c.get("card_type_id") == search_type]
 
+    # Build history for each card - documents that reference this card
+    all_docs = get_documents()
+    card_history = {}
+    for card in cards:
+        card_num = card.get("card_number")
+        history = []
+        for doc in all_docs:
+            for line in doc.get("lines", []):
+                if line.get("card_number") == card_num:
+                    history.append({
+                        "doc_date": doc.get("doc_date", ""),
+                        "doc_number": doc.get("doc_number", ""),
+                        "doc_type": DOCUMENT_TYPES.get(doc.get("doc_type"), doc.get("doc_type")),
+                        "status": doc.get("status", "")
+                    })
+        # Sort by date descending
+        history.sort(key=lambda x: x.get("doc_date", ""), reverse=True)
+        card_history[card["id"]] = history
+
     return render_template("refs/cards.html",
                            cards=cards,
                            card_types=card_types,
@@ -246,7 +265,8 @@ def ref_cards():
                            applicants=applicants,
                            search_number=search_number,
                            search_type=search_type,
-                           sort_by=sort_by)
+                           sort_by=sort_by,
+                           card_history=card_history)
 
 
 @app.route("/refs/cards/edit/<card_id>", methods=["GET", "POST"])
@@ -771,6 +791,25 @@ def doc_print_form(doc_id, form_type):
         return render_template("docs/print_transfer_mfc.html",
                                doc=doc,
                                lines=enriched_lines,
+                               mfc=mfc,
+                               employee=employee,
+                               author=author,
+                               our_org=our_org)
+    elif doc.get("doc_type") == "print" and form_type == "print":
+        # Specialized print form for "Печать карт"
+        return render_template("docs/print_print.html",
+                               doc=doc,
+                               lines=enriched_lines,
+                               org=org,
+                               employee=employee,
+                               author=author,
+                               our_org=our_org)
+    elif doc.get("doc_type") == "issue" and form_type == "issue":
+        # Specialized print form for "Выдача карт"
+        return render_template("docs/print_issue.html",
+                               doc=doc,
+                               lines=enriched_lines,
+                               org=org,
                                mfc=mfc,
                                employee=employee,
                                author=author,

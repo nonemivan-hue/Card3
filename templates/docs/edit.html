@@ -21,6 +21,16 @@
                     <i class="bi bi-printer"></i> Реестр внесения в комплекс
                 </a>
                 {% endif %}
+                {% if doc.doc_type == 'print' %}
+                <a href="{{ url_for('doc_print_form', doc_id=doc.id, form_type='print') }}" target="_blank" class="btn btn-outline-primary">
+                    <i class="bi bi-printer"></i> Печать карт
+                </a>
+                {% endif %}
+                {% if doc.doc_type == 'issue' %}
+                <a href="{{ url_for('doc_print_form', doc_id=doc.id, form_type='issue') }}" target="_blank" class="btn btn-outline-primary">
+                    <i class="bi bi-printer"></i> Выдача карт
+                </a>
+                {% endif %}
                 {% if doc.status != 'posted' %}
                 <form method="POST" action="{{ url_for('doc_post_route', doc_id=doc.id) }}" onsubmit="return confirm('Провести документ?');">
                     <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> Провести</button>

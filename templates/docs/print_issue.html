@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>{{ doc_type_name }} {{ doc.doc_number }}</title>
+    <title>Выдача карт {{ doc.doc_number }}</title>
     <style>
         body { font-family: 'Times New Roman', Times, serif; font-size: 14px; margin: 40px; }
         .header { text-align: center; margin-bottom: 30px; }
@@ -14,6 +14,8 @@
         table, th, td { border: 1px solid black; }
         th, td { padding: 8px; text-align: left; }
         th { background: #f0f0f0; }
+        .signature-block { margin-top: 40px; }
+        .signature-line { border-top: 1px solid black; width: 300px; margin-top: 5px; }
         @media print {
             .no-print { display: none; }
             body { margin: 0; }
@@ -27,7 +29,7 @@
     </div>
 
     <div class="header">
-        <h2>{{ doc_type_name }}</h2>
+        <h2>Выдача карт</h2>
         <p>№ {{ doc.doc_number }} от {{ doc.doc_date }}</p>
     </div>
 
@@ -43,31 +45,31 @@
         <thead>
             <tr>
                 <th style="width:50px">№ п/п</th>
-                {% if doc.doc_type in ['print', 'issue', 'transfer_mfc', 'return_mfc'] %}
                 <th>ФИО владельца</th>
-                {% endif %}
                 <th>Номер карты</th>
                 <th>Вид карты</th>
-                {% if doc.doc_type in ['issue', 'transfer_mfc', 'return_mfc'] %}
                 <th>ФИО заявителя</th>
-                {% endif %}
+                <th>Подпись</th>
             </tr>
         </thead>
         <tbody>
             {% for line in lines %}
             <tr>
                 <td>{{ line.line_no }}</td>
-                {% if doc.doc_type in ['print', 'issue', 'transfer_mfc', 'return_mfc'] %}
                 <td>{{ line.owner_name }}</td>
-                {% endif %}
                 <td>{{ line.card_number }}</td>
-                <td>{{ line.card_type_name }}</td>
-                {% if doc.doc_type in ['issue', 'transfer_mfc', 'return_mfc'] %}
+                <td>{{ line.card_type_print_name or line.card_type_name }}</td>
                 <td>{{ line.applicant_name or line.owner_name }}</td>
-                {% endif %}
+                <td></td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    <div class="signature-block">
+        <p>Карты получил:</p>
+        <p>_____________________ / _____________________</p>
+        <p style="font-size: 12px; color: gray;">(подпись) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (расшифровка подписи)</p>
+    </div>
 </body>
 </html>

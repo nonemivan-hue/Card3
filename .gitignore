@@ -1,5 +1,6 @@
 ```
-# Python
+# Compiled Python files
+*.pyc
 __pycache__/
 *.py[cod]
 *$py.class
@@ -32,9 +33,10 @@ dist/
 # Logs
 *.log
 
-# Environment
+# Environment files
 .env
 .env.local
+*.env.*
 .env.*
 .venv/
 venv/
