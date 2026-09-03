@@ -125,7 +125,7 @@
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
                                         <div class="modal-body">
-                                            {% set history = card_history.get(card.id, []) %}
+                                            {% set history = card_history.get(card.card_number, []) %}
                                             {% if history %}
                                             <table class="table table-sm table-striped">
                                                 <thead>

@@ -241,23 +241,25 @@ def ref_cards():
         cards = [c for c in cards if c.get("card_type_id") == search_type]
 
     # Build history for each card - documents that reference this card
+    # Optimized: only build index by card_number, fetch details on demand
     all_docs = get_documents()
-    card_history = {}
-    for card in cards:
-        card_num = card.get("card_number")
-        history = []
-        for doc in all_docs:
-            for line in doc.get("lines", []):
-                if line.get("card_number") == card_num:
-                    history.append({
-                        "doc_date": doc.get("doc_date", ""),
-                        "doc_number": doc.get("doc_number", ""),
-                        "doc_type": DOCUMENT_TYPES.get(doc.get("doc_type"), doc.get("doc_type")),
-                        "status": doc.get("status", "")
-                    })
-        # Sort by date descending
-        history.sort(key=lambda x: x.get("doc_date", ""), reverse=True)
-        card_history[card["id"]] = history
+    card_docs_index = {}
+    for doc in all_docs:
+        for line in doc.get("lines", []):
+            card_num = line.get("card_number")
+            if card_num:
+                if card_num not in card_docs_index:
+                    card_docs_index[card_num] = []
+                card_docs_index[card_num].append({
+                    "doc_date": doc.get("doc_date", ""),
+                    "doc_number": doc.get("doc_number", ""),
+                    "doc_type": DOCUMENT_TYPES.get(doc.get("doc_type"), doc.get("doc_type")),
+                    "status": doc.get("status", "")
+                })
+    
+    # Sort history for each card by date descending
+    for card_num in card_docs_index:
+        card_docs_index[card_num].sort(key=lambda x: x.get("doc_date", ""), reverse=True)
 
     return render_template("refs/cards.html",
                            cards=cards,
@@ -267,7 +269,7 @@ def ref_cards():
                            search_number=search_number,
                            search_type=search_type,
                            sort_by=sort_by,
-                           card_history=card_history)
+                           card_history=card_docs_index)
 
 
 @app.route("/refs/cards/edit/<card_id>", methods=["GET", "POST"])
