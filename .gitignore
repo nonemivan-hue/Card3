@@ -1,3 +1,6 @@
+```
+# Python
+__pycache__/
 Nothing should be ignored based on the provided file changes, as they only include HTML template files which are source code files.
 Nothing needs to be added to .gitignore since the changes only include HTML template files which are source files and not build artifacts, dependencies, or temporary files.
 ```
@@ -27,6 +30,12 @@ wheels/
 *.pyo
 *.pyd
 
+# Environment
+.venv/
+venv/
+.env
+.env.local
+*.env.*
 # Build and distribution artifacts
 build/
 dist/
@@ -35,6 +44,9 @@ dist/
 # Logs
 *.log
 
+# Editors
+.vscode/
+.idea/
 # Environment files
 .env
 .env.local
@@ -54,6 +66,7 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+```
 
 # OS
 .DS_Store

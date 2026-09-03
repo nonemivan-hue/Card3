@@ -32,6 +32,7 @@ from app.models import (
     get_cards_report_as_of, get_period_report, get_period_report_detail, get_edo_report, get_summary_report, get_stock_report, get_cards_as_of_report,
     CARD_STATUSES, DOCUMENT_TYPES, REPORT_STATUSES, log_action, now_iso
 )
+from app.card_reader import read_card_number, test_reader_connection, get_available_readers
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.secret_key = "transport_cards_secret_key_change_in_production"
@@ -1747,6 +1748,33 @@ def ref_export_excel(ref_name):
     wb.save(output)
     output.seek(0)
     return send_file(output, download_name=f"export_{ref_name}.xlsx", as_attachment=True)
+
+
+# ============== CARD READER API ==============
+@app.route("/api/card_reader/test", methods=["GET"])
+@login_required
+def api_card_reader_test():
+    """Тестирование подключения устройства считывания"""
+    result = test_reader_connection()
+    return jsonify(result)
+
+
+@app.route("/api/card_reader/read", methods=["POST"])
+@login_required
+def api_card_reader_read():
+    """Считать номер карты с устройства"""
+    data = request.get_json() or {}
+    reader_name = data.get("reader_name")
+    result = read_card_number(reader_name)
+    return jsonify(result)
+
+
+@app.route("/api/card_reader/list", methods=["GET"])
+@login_required
+def api_card_reader_list():
+    """Получить список доступных устройств считывания"""
+    readers_list = get_available_readers()
+    return jsonify({"readers": readers_list})
 
 
 # ============== RUN ==============

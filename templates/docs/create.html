@@ -322,54 +322,46 @@ function readCardFromReader(lineIdx) {
     const row = document.querySelector(`tr[data-idx="${lineIdx}"]`);
     const input = row.querySelector(`[name="line_${lineIdx}_card_number"]`);
     
-    // For Windows: ACR1281U works as HID keyboard wedge
-    // We listen for rapid keyboard input followed by Enter
+    // Используем PC/SC интерфейс для работы с ридером смарт-карт
     const originalPlaceholder = input.placeholder;
     const originalValue = input.value;
     input.placeholder = 'Приложите карту к считывателю...';
     input.value = '';
     input.focus();
     
-    let lastKeyTime = Date.now();
-    let bufferTimeout = null;
-    
-    keydownHandler = function(e) {
-        const currentTime = Date.now();
-        
-        // Reset buffer if too much time passed between keystrokes (> 1 second)
-        if (currentTime - lastKeyTime > 1000 && e.key !== 'Enter') {
-            cardNumberBuffer = '';
+    // Отправляем запрос на сервер для чтения карты через PC/SC
+    fetch('/api/card_reader/read', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.card_number) {
+            input.value = data.card_number;
+            // Trigger blur to fetch card details
+            onCardNumberBlur(input);
+        } else {
+            input.value = originalValue;
+            alert('Ошибка чтения карты: ' + (data.error || 'Неизвестная ошибка'));
         }
-        lastKeyTime = currentTime;
-        
-        if (e.key === 'Enter') {
-            if (cardNumberBuffer.trim().length > 0) {
-                input.value = cardNumberBuffer.trim();
-                // Trigger blur to fetch card details
-                onCardNumberBlur(input);
-            } else {
-                input.value = originalValue;
-            }
-            cleanup();
-            e.preventDefault();
-        } else if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
-            cardNumberBuffer += e.key;
-        }
-    };
+        cleanup();
+    })
+    .catch(error => {
+        input.value = originalValue;
+        alert('Ошибка подключения к устройству: ' + error.message);
+        cleanup();
+    });
     
     const cleanup = function() {
-        if (keydownHandler) {
-            document.removeEventListener('keydown', keydownHandler);
-            keydownHandler = null;
-        }
         if (bufferTimeout) {
             clearTimeout(bufferTimeout);
         }
         input.placeholder = originalPlaceholder;
         readInProgress = false;
     };
-    
-    document.addEventListener('keydown', keydownHandler);
     
     // Timeout after 30 seconds
     bufferTimeout = setTimeout(() => {
