@@ -10,6 +10,7 @@ import uuid
 import shutil
 import zipfile
 from datetime import datetime
+import locale
 from io import BytesIO
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
@@ -548,18 +549,21 @@ def api_employees():
 @login_required
 def docs_journal():
     doc_type = request.args.get("type", "")
+    date_from = request.args.get("date_from", "")
+    date_to = request.args.get("date_to", "")
+    
     if is_issue_user():
         # Issue users can only see issue documents
         if doc_type and doc_type != "issue":
             flash("Доступ запрещен", "danger")
             return redirect(url_for("docs_journal"))
-        items = get_documents(doc_type="issue")
+        items = get_documents(doc_type="issue", date_from=date_from, date_to=date_to)
         doc_type = "issue"
     else:
-        items = get_documents(doc_type=doc_type if doc_type else None)
+        items = get_documents(doc_type=doc_type if doc_type else None, date_from=date_from, date_to=date_to)
     employees = get_employees()
     emp_map = {e["id"]: e for e in employees}
-    return render_template("docs/journal.html", items=items, doc_type=doc_type, emp_map=emp_map)
+    return render_template("docs/journal.html", items=items, doc_type=doc_type, emp_map=emp_map, date_from=date_from, date_to=date_to)
 
 
 @app.route("/docs/create/<doc_type>", methods=["GET", "POST"])
@@ -1229,12 +1233,16 @@ def report_summary():
     report = None
     start_date = ""
     end_date = ""
+    report_number = ""
+    report_date = ""
     if request.method == "POST":
         start_date = request.form.get("start_date", "")
         end_date = request.form.get("end_date", "")
+        report_number = request.form.get("report_number", "")
+        report_date = request.form.get("report_date", "")
         if start_date and end_date:
             report = get_summary_report(start_date, end_date)
-    return render_template("reports/summary.html", report=report, start_date=start_date, end_date=end_date)
+    return render_template("reports/summary.html", report=report, start_date=start_date, end_date=end_date, report_number=report_number, report_date=report_date)
 
 
 @app.route("/reports/print_summary")
@@ -1242,11 +1250,41 @@ def report_summary():
 def print_summary():
     start_date = request.args.get("start_date", "")
     end_date = request.args.get("end_date", "")
+    report_number = request.args.get("report_number", "")
+    report_date_str = request.args.get("report_date", "")
+    
+    # Parse report_date if provided
+    report_date = None
+    if report_date_str:
+        try:
+            report_date = datetime.strptime(report_date_str, "%Y-%m-%d")
+        except ValueError:
+            report_date = None
+    
+    # Format date for display (dd.mm.yyyy)
+    report_date_formatted = ""
+    if report_date:
+        try:
+            import locale
+            locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
+            report_date_formatted = report_date.strftime("%d.%B.%Y")
+        except:
+            # Fallback if Russian locale not available
+            month_names = {
+                1: 'января', 2: 'февраля', 3: 'марта', 4: 'апреля',
+                5: 'мая', 6: 'июня', 7: 'июля', 8: 'августа',
+                9: 'сентября', 10: 'октября', 11: 'ноября', 12: 'декабря'
+            }
+            day = report_date.strftime("%d")
+            month = month_names.get(report_date.month, "___________")
+            year = report_date.strftime("%Y")
+            report_date_formatted = f"{day}.{month}.{year}"
+    
     if not start_date or not end_date:
         flash("Укажите период", "warning")
         return redirect(url_for("report_summary"))
     report = get_summary_report(start_date, end_date)
-    return render_template("reports/print_summary.html", report=report, start_date=start_date, end_date=end_date)
+    return render_template("reports/print_summary.html", report=report, start_date=start_date, end_date=end_date, report_number=report_number, report_date=report_date, report_date_formatted=report_date_formatted)
 
 
 @app.route("/reports/stock")
