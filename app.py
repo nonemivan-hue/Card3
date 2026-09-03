@@ -795,6 +795,25 @@ def doc_print_form(doc_id, form_type):
                                employee=employee,
                                author=author,
                                our_org=our_org)
+    elif doc.get("doc_type") == "print" and form_type == "print":
+        # Specialized print form for "Печать карт"
+        return render_template("docs/print_print.html",
+                               doc=doc,
+                               lines=enriched_lines,
+                               org=org,
+                               employee=employee,
+                               author=author,
+                               our_org=our_org)
+    elif doc.get("doc_type") == "issue" and form_type == "issue":
+        # Specialized print form for "Выдача карт"
+        return render_template("docs/print_issue.html",
+                               doc=doc,
+                               lines=enriched_lines,
+                               org=org,
+                               mfc=mfc,
+                               employee=employee,
+                               author=author,
+                               our_org=our_org)
     else:
         # Generic print form for any document
         return render_template("docs/print_generic.html",
