@@ -154,6 +154,15 @@ class PostgreSQLStorage:
             item["id"] = str(uuid.uuid4())
         item["created_at"] = datetime.now().isoformat()
 
+        # Convert empty strings to None for UUID and other nullable fields
+        uuid_fields = {
+            "organization_id", "mfc_id", "employee_id", "card_type_id",
+            "owner_id", "applicant_id", "created_by", "updated_by"
+        }
+        for field in uuid_fields:
+            if field in item and item[field] == "":
+                item[field] = None
+
         serialized_item = _serialize_json_fields(table, item)
 
         columns = list(serialized_item.keys())
@@ -182,6 +191,15 @@ class PostgreSQLStorage:
         # Only add updated_at if the table is not 'constants' or 'counters'
         if table not in ("constants", "counters", "action_log"):
             updates["updated_at"] = datetime.now().isoformat()
+
+        # Convert empty strings to None for UUID and other nullable fields
+        uuid_fields = {
+            "organization_id", "mfc_id", "employee_id", "card_type_id",
+            "owner_id", "applicant_id", "created_by", "updated_by"
+        }
+        for field in uuid_fields:
+            if field in updates and updates[field] == "":
+                updates[field] = None
 
         items = self.load_all(name)
         for item in items:
