@@ -5,11 +5,12 @@
 ## Содержание
 
 1. [Подготовка](#подготовка)
-2. [Способ 1: Автоматическая миграция через скрипт](#способ-1-автоматическая-миграция-через-скрипт)
+2. [Способ 1: Автоматическая миграция через скрипт (РЕКОМЕНДУЕТСЯ)](#способ-1-автоматическая-миграция-через-скрипт-рекомендуется)
 3. [Способ 2: Ручная загрузка через Python утилиту](#способ-2-ручная-загрузка-через-python-утилиту)
 4. [Способ 3: Пошаговая загрузка через psql](#способ-3-пошаговая-загрузка-через-psql)
-5. [Проверка результатов](#проверка-результатов)
-6. [Устранение неполадок](#устранение-неполадок)
+5. [Решение проблемы с длиной полей (ОШИБКА: значение не умещается)](#решение-проблемы-с-длиной-полей-ошибка-значение-не-умещается)
+6. [Проверка результатов](#проверка-результатов)
+7. [Устранение неполадок](#устранение-неполадок)
 
 ---
 
@@ -17,8 +18,10 @@
 
 ### Требования
 
-- Установленный PostgreSQL (версия 14 или выше)
-- Python 3.8+ с установленными модулями `json` и `csv` (входят в стандартную библиотеку)
+- Установленный PostgreSQL 15 по пути: `D:\PostgreSQL\15`
+- Приложение установлено по пути: `D:\card`
+- Пароль PostgreSQL: `3831043`
+- Python 3.8+ с модулями `json` и `csv` (входят в стандартную библиотеку)
 - Папка `Data` с JSON-файлами экспортированных данных
 - Созданная база данных PostgreSQL с инициализированной схемой
 
@@ -27,14 +30,15 @@
 Убедитесь, что папка `Data` содержит следующие JSON-файлы:
 
 ```
-Data/
+D:\card\Data\
 ├── card_types.json      # Типы карт
+├── cards.json           # Карты
+├── transactions.json    # Транзакции
 ├── owners.json          # Владельцы карт
 ├── applicants.json      # Заявители
 ├── organizations.json   # Организации
 ├── mfcs.json            # МФЦ
 ├── employees.json       # Сотрудники
-├── cards.json           # Карты
 ├── documents.json       # Документы
 ├── action_log.json      # Журнал действий
 ├── constants.json       # Константы системы
@@ -49,402 +53,180 @@ Data/
 "D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system -f "D:\card\postgres\init.sql"
 ```
 
-### Шаг 3: Настройка переменных окружения
-
-Для удобства установите переменные окружения:
-
-```cmd
-setx PG_BIN "D:\PostgreSQL\15\bin"
-setx PG_USER "postgres"
-setx PG_PASSWORD "3831043"
-setx DB_NAME "card_system"
-setx DATA_DIR "D:\card\data"
-```
-
-**Важно:** После установки переменных перезапустите командную строку.
+Или через pgAdmin: выполните SQL-скрипт создания таблиц.
 
 ---
 
-## Способ 1: Автоматическая миграция через скрипт
+## Решение проблемы с длиной полей (ОШИБКА: значение не умещается)
 
-### Использование готового BAT-скрипта
+**ВАЖНО:** Перед миграцией данных выполните скрипт увеличения длины текстовых полей, чтобы избежать ошибки:
+> ОШИБКА: значение не умещается в тип character varying(255)
 
-В папке `Install PostgreSQL` находится скрипт `migrate_from_json.bat`, который автоматизирует весь процесс миграции.
+### Автоматическое решение
 
-#### Быстрый старт
+Скрипт миграции `migrate_from_json.bat` **автоматически** выполняет скрипт `fix_column_lengths.sql` перед загрузкой данных.
 
-1. Откройте командную строку от имени администратора
-2. Перейдите в папку со скриптом:
+### Ручное выполнение (если нужно)
+
+```cmd
+"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system -f "D:\card\Install PostgreSQL\fix_column_lengths.sql"
+```
+
+Этот скрипт изменяет типы данных следующих полей на `TEXT`:
+- `card_types`: name, print_name, description, report_name
+- `cards`: number, holder_name, comment
+- `transactions`: comment, terminal_name, route_info
+
+---
+
+## Способ 1: Автоматическая миграция через скрипт (РЕКОМЕНДУЕТСЯ)
+
+### Быстрый старт
+
+1. Откройте командную строку (cmd) от имени администратора
+2. Перейдите в папку со скриптами:
    ```cmd
-   cd "C:\path\to\Install PostgreSQL"
+   cd D:\card\Install PostgreSQL
    ```
-
-3. Запустите скрипт с параметрами:
-   ```cmd
-   migrate_from_json.bat "C:\path\to\data" card_system postgres
-   ```
-   
-   Или используйте значения по умолчанию (отредактируйте скрипт перед запуском):
+3. Запустите скрипт миграции:
    ```cmd
    migrate_from_json.bat
    ```
 
-#### Параметры скрипта
-
-| Параметр | Описание | Пример |
-|----------|----------|--------|
-| 1 | Путь к папке с JSON файлами | `C:\project\data` |
-| 2 | Имя базы данных | `card_system` |
-| 3 | Пользователь PostgreSQL | `postgres` |
-
-#### Что делает скрипт
-
-1. Преобразует все JSON файлы в CSV формат
-2. Создает временные таблицы в PostgreSQL
-3. Загружает данные из CSV во временные таблицы
-4. Очищает временные файлы
-
-#### Логирование
-
-Скрипт выводит подробный лог в консоль. Для сохранения в файл:
+### Параметры командной строки
 
 ```cmd
-migrate_from_json.bat "C:\path\to\data" card_system postgres > migration_log.txt 2>&1
+migrate_from_json.bat [путь_к_папке_Data] [имя_БД] [пользователь]
 ```
+
+Пример:
+```cmd
+migrate_from_json.bat D:\card\Data card_system postgres
+```
+
+### Что делает скрипт:
+
+1. **Шаг 0**: Выполняет `fix_column_lengths.sql` для увеличения длины текстовых полей
+2. **Шаг 1**: Конвертирует все JSON файлы из папки `Data` в CSV формат
+3. **Шаг 2**: Загружает данные в PostgreSQL с явным указанием колонок
+4. **Шаг 3**: Очищает временные файлы
+
+### Логирование
+
+Скрипт выводит подробный лог в консоль:
+- `[УСПЕХ]` - операция выполнена успешно
+- `[ОШИБКА]` - критическая ошибка, требующая вмешательства
+- `[ПРЕДУПРЕЖДЕНИЕ]` - не критичная проблема
+- `[ПРОПУСК]` - файл/таблица пропущены
 
 ---
 
 ## Способ 2: Ручная загрузка через Python утилиту
 
-### Шаг 1: Преобразование JSON в CSV
-
-Используйте утилиту `json_to_csv.py` из папки `Install PostgreSQL`:
-
-#### Обработка одного файла
+### Шаг 1: Конвертация JSON в CSV
 
 ```cmd
-python "Install PostgreSQL\json_to_csv.py" data/cards.csv output/cards.csv
+cd D:\card\Install PostgreSQL
+python json_to_csv.py --dir D:\card\Data --output D:\card\csv_output
 ```
 
-#### Обработка всей папки
+### Шаг 2: Импорт через psql
 
 ```cmd
-python "Install PostgreSQL\json_to_csv.py" --dir data --output csv_output
-```
-
-#### Параметры утилиты
-
-```
-Режимы работы:
-  1. Одиночный файл:
-     python json_to_csv.py <input.json> <output.csv>
-
-  2. Обработка папки:
-     python json_to_csv.py --dir <path_to_data_folder> [--output <output_folder>]
-```
-
-### Шаг 2: Загрузка CSV в PostgreSQL
-
-#### Вариант A: Через psql \copy
-
-```cmd
-"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system -c "\copy card_types FROM 'csv_output/card_types.csv' WITH CSV HEADER ENCODING 'UTF8';"
-```
-
-#### Вариант B: Через SQL команду COPY
-
-Создайте SQL скрипт `load_data.sql`:
-
-```sql
--- Загрузка справочников
-\COPY card_types(id, name, print_name, created_at, updated_at) 
-FROM 'csv_output/card_types.csv' WITH CSV HEADER ENCODING 'UTF8';
-
-\COPY owners(id, full_name, created_at, updated_at) 
-FROM 'csv_output/owners.csv' WITH CSV HEADER ENCODING 'UTF8';
-
-\COPY applicants(id, full_name, created_at, updated_at) 
-FROM 'csv_output/applicants.csv' WITH CSV HEADER ENCODING 'UTF8';
-
--- Загрузка основных таблиц
-\COPY cards(id, card_number, card_type_id, status, owner_id, applicant_id, created_at, updated_at) 
-FROM 'csv_output/cards.csv' WITH CSV HEADER ENCODING 'UTF8';
-
-\COPY documents(id, doc_type, doc_number, doc_date, organization_id, mfc_id, employee_id, lines, status, created_by, created_at, updated_at, posted_at, posted_by) 
-FROM 'csv_output/documents.csv' WITH CSV HEADER ENCODING 'UTF8';
-```
-
-Выполните скрипт:
-
-```cmd
-"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system -f load_data.sql
+"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system -c "\COPY card_types (id,created_at,updated_at,name,print_name,description,report_name,is_active,sort_order) FROM 'D:\card\csv_output\card_types.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');"
 ```
 
 ---
 
 ## Способ 3: Пошаговая загрузка через psql
 
-### Порядок загрузки таблиц
-
-**Важно:** Соблюдайте порядок загрузки из-за внешних ключей!
-
-1. **Справочники (без внешних ключей):**
-   - `constants`
-   - `counters`
-   - `employees`
-   - `organizations`
-   - `mfcs`
-   - `card_types`
-   - `owners`
-   - `applicants`
-
-2. **Основные таблицы (с внешними ключами):**
-   - `cards`
-   - `documents`
-   - `action_log`
-
-### Пошаговая инструкция
-
-#### Шаг 1: Подключение к базе данных
-
-```cmd
-"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system
-```
-
-#### Шаг 2: Отключение внешних ключей (опционально)
-
-Если возникают ошибки из-за порядка загрузки, временно отключите проверку внешних ключей:
+### Для таблицы card_types:
 
 ```sql
-ALTER TABLE cards DISABLE TRIGGER ALL;
-ALTER TABLE documents DISABLE TRIGGER ALL;
-ALTER TABLE action_log DISABLE TRIGGER ALL;
+-- Очистка таблицы
+TRUNCATE TABLE card_types RESTART IDENTITY CASCADE;
+
+-- Импорт данных
+\COPY card_types (id,created_at,updated_at,name,print_name,description,report_name,is_active,sort_order) 
+FROM 'D:\card\Data\card_types.csv' 
+WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
 ```
 
-#### Шаг 3: Загрузка каждой таблицы
-
-Для каждой таблицы выполните:
+### Для таблицы cards:
 
 ```sql
--- Пример для card_types
-\COPY card_types(id, name, print_name, created_at, updated_at) 
-FROM 'C:/path/to/csv/card_types.csv' WITH CSV HEADER ENCODING 'UTF8';
+TRUNCATE TABLE cards RESTART IDENTITY CASCADE;
 
--- Пример для cards
-\COPY cards(id, card_number, card_type_id, status, owner_id, applicant_id, created_at, updated_at) 
-FROM 'C:/path/to/csv/cards.csv' WITH CSV HEADER ENCODING 'UTF8';
+\COPY cards (id,created_at,updated_at,card_type_id,number,holder_name,issue_date,expiry_date,status,comment,balance) 
+FROM 'D:\card\Data\cards.csv' 
+WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
 ```
 
-**Важно:** Используйте прямые слеши `/` в путях даже в Windows!
-
-#### Шаг 4: Включение внешних ключей
+### Для таблицы transactions:
 
 ```sql
-ALTER TABLE cards ENABLE TRIGGER ALL;
-ALTER TABLE documents ENABLE TRIGGER ALL;
-ALTER TABLE action_log ENABLE TRIGGER ALL;
-```
+TRUNCATE TABLE transactions RESTART IDENTITY CASCADE;
 
-#### Шаг 5: Обновление последовательностей
-
-После загрузки данных обновите счетчики:
-
-```sql
--- Для таблиц с SERIAL полями
-SELECT setval('action_log_id_seq', (SELECT MAX(id) FROM action_log));
+\COPY transactions (id,created_at,card_id,amount,transaction_type,transaction_date,terminal_id,terminal_name,route_info,comment) 
+FROM 'D:\card\Data\transactions.csv' 
+WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
 ```
 
 ---
 
 ## Проверка результатов
 
-### Быстрая проверка количества записей
+После миграции выполните проверки:
 
 ```cmd
-"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system -c "
-SELECT 
-    (SELECT COUNT(*) FROM card_types) as card_types,
-    (SELECT COUNT(*) FROM owners) as owners,
-    (SELECT COUNT(*) FROM applicants) as applicants,
-    (SELECT COUNT(*) FROM cards) as cards,
-    (SELECT COUNT(*) FROM documents) as documents,
-    (SELECT COUNT(*) FROM action_log) as action_log;
-"
-```
+REM Подсчет записей в таблицах
+"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system -c "SELECT COUNT(*) FROM card_types;"
+"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system -c "SELECT COUNT(*) FROM cards;"
+"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system -c "SELECT COUNT(*) FROM transactions;"
 
-### Детальная проверка
-
-Подключитесь к базе данных и выполните запросы:
-
-```sql
--- Проверка типов карт
-SELECT * FROM card_types LIMIT 10;
-
--- Проверка карт
-SELECT c.card_number, ct.name as type_name, o.full_name as owner_name
-FROM cards c
-LEFT JOIN card_types ct ON c.card_type_id = ct.id
-LEFT JOIN owners o ON c.owner_id = o.id
-LIMIT 10;
-
--- Проверка документов
-SELECT d.doc_type, d.doc_number, d.doc_date, d.status
-FROM documents d
-ORDER BY d.created_at DESC
-LIMIT 10;
-```
-
-### Сверка с исходными данными
-
-Сравните количество записей в JSON и PostgreSQL:
-
-```cmd
-REM Для Windows (PowerShell)
-powershell -c "(Get-Content data/cards.json | Measure-Object -Line).Lines / 2"
-
-REM Для Linux/Mac
-wc -l data/cards.json
+REM Проверка последних записей
+"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system -c "SELECT * FROM card_types ORDER BY created_at DESC LIMIT 5;"
 ```
 
 ---
 
 ## Устранение неполадок
 
-### Ошибка: "ОШИБКА: лишние данные после содержимого последнего столбца"
+### Ошибка: "значение не умещается в тип character varying(255)"
 
-**Причина:** В CSV файле больше колонок, чем в таблице PostgreSQL, либо порядок колонок не совпадает.
-
-**Решение 1: Используйте утилиту json_to_csv.py с явным указанием колонок**
-
-Обновленная утилита `json_to_csv.py` автоматически определяет правильный порядок колонок для известных таблиц:
+**Решение:** Выполните скрипт `fix_column_lengths.sql` перед импортом:
 
 ```cmd
-REM Автоматическое определение колонок для известных таблиц
-python "Install PostgreSQL\json_to_csv.py" --dir Data --output csv_output
-
-REM Или вручную для конкретной таблицы
-python "Install PostgreSQL\json_to_csv.py" --table card_types --input Data/card_types.json --output csv/card_types.csv
+"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system -f "D:\card\Install PostgreSQL\fix_column_lengths.sql"
 ```
 
-**Решение 2: Явно укажите список колонок в команде COPY**
+### Ошибка: "лишние данные после содержимого последнего столбца"
+
+**Причина:** Порядок колонок в CSV не совпадает с таблицей или есть лишние поля.
+
+**Решение:** Используйте явное указание колонок в команде COPY:
 
 ```sql
-\COPY card_types(id, name, report_name, created_at, updated_at) 
-FROM 'C:/path/to/csv/card_types.csv' WITH CSV HEADER ENCODING 'UTF8';
+\COPY table_name (col1,col2,col3) FROM 'file.csv' WITH (FORMAT csv, HEADER true);
 ```
 
-**Решение 3: Проверьте CSV файл**
-
-Откройте CSV файл и убедитесь, что:
-- Количество колонок совпадает с таблицей БД
-- Порядок колонок соответствует структуре таблицы
-- Нет лишних запятых в конце строк
-
----
-
-### Ошибка: "duplicate key value violates unique constraint"
-
-**Причина:** В таблице уже есть данные с такими же ID.
+### Ошибка: "файл не найден"
 
 **Решение:**
+1. Проверьте путь к файлу (используйте абсолютные пути)
+2. Убедитесь, что файл существует
+3. Проверьте права доступа к файлу
+
+### Ошибка: "отношение уже существует"
+
+**Решение:** Очистите таблицу перед импортом:
+
 ```sql
--- Очистка таблиц перед загрузкой
-TRUNCATE TABLE cards, documents, action_log RESTART IDENTITY CASCADE;
-TRUNCATE TABLE card_types, owners, applicants, organizations, mfcs, employees RESTART IDENTITY CASCADE;
-```
-
-### Ошибка: "column does not exist"
-
-**Причина:** Названия колонок в CSV не совпадают со структурой БД.
-
-**Решение:**
-1. Проверьте заголовки CSV файла
-2. Укажите явный список колонок в команде `\COPY`
-3. При необходимости переименуйте колонки в CSV
-
-### Ошибка: "invalid input syntax for type uuid"
-
-**Причина:** UUID в JSON формате отличается от формата PostgreSQL.
-
-**Решение:**
-```sql
--- Временное изменение типа колонки
-ALTER TABLE cards ALTER COLUMN card_type_id TYPE VARCHAR(50);
--- Загрузка данных
--- Возврат типа UUID
-ALTER TABLE cards ALTER COLUMN card_type_id TYPE UUID USING card_type_id::UUID;
-```
-
-### Ошибка: "date/time field value out of range"
-
-**Причина:** Формат даты в JSON не соответствует формату PostgreSQL.
-
-**Решение:**
-1. Преобразуйте даты в формат `YYYY-MM-DD HH:MM:SS` перед загрузкой
-2. Используйте команду TO_DATE в PostgreSQL:
-   ```sql
-   UPDATE documents SET doc_date = TO_DATE(doc_date, 'DD.MM.YYYY');
-   ```
-
-### Ошибка: "permission denied for table"
-
-**Причина:** У пользователя нет прав на запись.
-
-**Решение:**
-```sql
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO app_user;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO app_user;
-```
-
-### Данные загружены, но связи не работают
-
-**Причина:** UUID записаны как строки.
-
-**Решение:**
-```sql
--- Проверка типов данных
-\d cards
-
--- Исправление (если нужно)
-ALTER TABLE cards ALTER COLUMN card_type_id TYPE UUID USING card_type_id::UUID;
+TRUNCATE TABLE table_name RESTART IDENTITY CASCADE;
 ```
 
 ---
 
-## Дополнительные материалы
+## Контакты и поддержка
 
-### Полезные команды psql
-
-```cmd
--- Показать все таблицы
-\dt
-
--- Показать структуру таблицы
-\d cards
-
--- Показать содержимое таблицы
-SELECT * FROM cards LIMIT 10;
-
--- Выйти из psql
-\q
-```
-
-### Скрипты в папке Install PostgreSQL
-
-| Файл | Описание |
-|------|----------|
-| `migrate_from_json.bat` | Автоматический скрипт миграции |
-| `json_to_csv.py` | Утилита преобразования JSON в CSV |
-| `backup_daily.bat` | Резервное копирование |
-| `restore_backup.bat` | Восстановление из резервной копии |
-
-### Контакты поддержки
-
-При возникновении проблем обратитесь к:
-- Документации PostgreSQL: https://www.postgresql.org/docs/
-- Логи PostgreSQL: `D:\PostgreSQL\15\data\log\`
-
----
-
-**Дата обновления инструкции:** 2024  
-**Версия PostgreSQL:** 15.x (адаптируется под вашу версию)
+При возникновении проблем обратитесь к документации PostgreSQL или системному администратору.

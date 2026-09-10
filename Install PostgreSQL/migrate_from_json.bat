@@ -1,5 +1,6 @@
 @echo off
 REM migrate_from_json.bat - Скрипт миграции данных из JSON файлов в PostgreSQL
+REM Версия: 2.0 (с исправлением длин полей и явным указанием колонок)
 REM Использование: migrate_from_json.bat [путь_к_папке_data] [имя_БД] [пользователь]
 
 SETLOCAL EnableDelayedExpansion
@@ -12,6 +13,7 @@ set PG_USER=postgres
 set PG_PASSWORD=3831043
 set DB_NAME=card_system
 set DATA_DIR=D:\card\data
+set SCRIPT_DIR=%~dp0
 
 REM Переопределение параметров из командной строки (если переданы)
 if not "%~1"=="" set DATA_DIR=%~1
@@ -22,12 +24,13 @@ REM Установка переменной окружения для парол
 set PGPASSWORD=%PG_PASSWORD%
 
 echo ====================================================
-echo Миграция данных из JSON в PostgreSQL
+echo Миграция данных из JSON в PostgreSQL (Версия 2.0)
 echo ====================================================
 echo Параметры:
 echo   - База данных: %DB_NAME%
 echo   - Пользователь: %PG_USER%
 echo   - Папка с данными: %DATA_DIR%
+echo   - Путь к PostgreSQL: %PG_BIN%
 echo ====================================================
 echo.
 
@@ -43,10 +46,23 @@ if not exist "%PG_BIN%\psql.exe" (
     exit /b 1
 )
 
-if not exist "%PG_BIN%\pg_restore.exe" (
-    echo ОШИБКА: pg_restore.exe не найден. Проверьте путь к PostgreSQL: %PG_BIN%
-    exit /b 1
+REM Шаг 0: Исправление длин полей в БД (чтобы избежать ошибок переполнения)
+echo Шаг 0: Изменение типов данных столбцов (увеличение длины)...
+if exist "%SCRIPT_DIR%fix_column_lengths.sql" (
+    "%PG_BIN%\psql.exe" -U %PG_USER% -d %DB_NAME% -f "%SCRIPT_DIR%fix_column_lengths.sql"
+    if !ERRORLEVEL! NEQ 0 (
+        echo ПРЕДУПРЕЖДЕНИЕ: Не удалось выполнить скрипт fix_column_lengths.sql
+        echo Убедитесь, что таблицы уже созданы в базе данных.
+        echo Продолжаем миграцию...
+    ) else (
+        echo [УСПЕХ] Типы данных изменены.
+    )
+) else (
+    echo ПРЕДУПРЕЖДЕНИЕ: Файл fix_column_lengths.sql не найден.
+    echo Если возникнет ошибка "значение не умещается в тип character varying",
+    echo выполните этот скрипт вручную после создания таблиц.
 )
+echo.
 
 REM Создание временной папки для CSV файлов
 set TEMP_CSV_DIR=%TEMP%\pg_migration_%RANDOM%
@@ -145,47 +161,52 @@ REM ============================================
 echo Шаг 2: Загрузка данных в PostgreSQL...
 echo.
 
-REM Функция загрузки CSV в таблицу
+REM Функция загрузки CSV в таблицу с явным указанием колонок
 :LOAD_TABLE
 set TABLE_NAME=%1
 set CSV_FILE=%2
+set COLUMNS=%3
 
 if exist "%CSV_FILE%" (
     echo Загрузка таблицы %TABLE_NAME%...
     
-    REM Получаем заголовки из первой строки CSV
-    set /p HEADERS=<"%CSV_FILE%"
+    REM Очистка таблицы перед загрузкой (если таблица существует)
+    "%PG_BIN%\psql.exe" -U %PG_USER% -d %DB_NAME% -c "TRUNCATE TABLE %TABLE_NAME% RESTART IDENTITY CASCADE;" 2>nul
     
-    REM Создаем временную таблицу и загружаем данные
-    "%PG_BIN%\psql.exe" -U %PG_USER% -d %DB_NAME% -c "DROP TABLE IF EXISTS temp_%TABLE_NAME% CASCADE;"
-    "%PG_BIN%\psql.exe" -U %PG_USER% -d %DB_NAME% -c "CREATE TABLE temp_%TABLE_NAME% AS SELECT * FROM %TABLE_NAME% WITH NO DATA;"
-    
-    REM Используем COPY для загрузки данных
-    "%PG_BIN%\psql.exe" -U %PG_USER% -d %DB_NAME% -c "\copy temp_%TABLE_NAME% FROM '%CSV_FILE%' WITH CSV HEADER ENCODING 'UTF8';"
+    REM Загружаем данные через COPY с явным указанием колонок
+    if "%COLUMNS%"=="" (
+        REM Если колонки не указаны, используем заголовки из CSV
+        "%PG_BIN%\psql.exe" -U %PG_USER% -d %DB_NAME% -c "\copy %TABLE_NAME% FROM '%CSV_FILE%' WITH CSV HEADER ENCODING 'UTF8';"
+    ) else (
+        REM Используем явно указанный список колонок
+        "%PG_BIN%\psql.exe" -U %PG_USER% -d %DB_NAME% -c "\copy %TABLE_NAME% (%COLUMNS%) FROM '%CSV_FILE%' WITH CSV HEADER ENCODING 'UTF8';"
+    )
     
     if !ERRORLEVEL! EQU 0 (
-        echo Успешно загружено в temp_%TABLE_NAME%
-        REM Здесь можно добавить логику объединения с основной таблицей
+        echo [УСПЕХ] Таблица %TABLE_NAME% загружена.
     ) else (
-        echo ОШИБКА загрузки %TABLE_NAME%
+        echo [ОШИБКА] Не удалось загрузить таблицу %TABLE_NAME%.
+        echo Проверьте соответствие структуры CSV и таблицы.
     )
 ) else (
-    echo Файл %CSV_FILE% не найден, пропускаем %TABLE_NAME%
+    echo [ПРОПУСК] Файл %CSV_FILE% не найден.
 )
 goto :EOF
 
 REM Загрузка основных таблиц (порядок важен из-за внешних ключей)
-call :LOAD_TABLE "constants" "%TEMP_CSV_DIR%\constants.csv"
-call :LOAD_TABLE "counters" "%TEMP_CSV_DIR%\counters.csv"
-call :LOAD_TABLE "employees" "%TEMP_CSV_DIR%\employees.csv"
-call :LOAD_TABLE "organizations" "%TEMP_CSV_DIR%\organizations.csv"
-call :LOAD_TABLE "mfcs" "%TEMP_CSV_DIR%\mfcs.csv"
-call :LOAD_TABLE "card_types" "%TEMP_CSV_DIR%\card_types.csv"
-call :LOAD_TABLE "owners" "%TEMP_CSV_DIR%\owners.csv"
-call :LOAD_TABLE "applicants" "%TEMP_CSV_DIR%\applicants.csv"
-call :LOAD_TABLE "cards" "%TEMP_CSV_DIR%\cards.csv"
-call :LOAD_TABLE "documents" "%TEMP_CSV_DIR%\documents.csv"
-call :LOAD_TABLE "action_log" "%TEMP_CSV_DIR%\action_log.csv"
+REM Для каждой таблицы явно указываем колонки в правильном порядке
+call :LOAD_TABLE "card_types" "%TEMP_CSV_DIR%\card_types.csv" "id,created_at,updated_at,name,print_name,description,report_name,is_active,sort_order"
+call :LOAD_TABLE "cards" "%TEMP_CSV_DIR%\cards.csv" "id,created_at,updated_at,card_type_id,number,holder_name,issue_date,expiry_date,status,comment,balance"
+call :LOAD_TABLE "transactions" "%TEMP_CSV_DIR%\transactions.csv" "id,created_at,card_id,amount,transaction_type,transaction_date,terminal_id,terminal_name,route_info,comment"
+call :LOAD_TABLE "owners" "%TEMP_CSV_DIR%\owners.csv" "id,created_at,updated_at,name,inn,kpp,address,phone,email"
+call :LOAD_TABLE "employees" "%TEMP_CSV_DIR%\employees.csv" "id,created_at,updated_at,full_name,position,login,is_active"
+call :LOAD_TABLE "organizations" "%TEMP_CSV_DIR%\organizations.csv" "id,created_at,updated_at,name,inn,kpp,address"
+call :LOAD_TABLE "constants" "%TEMP_CSV_DIR%\constants.csv" "id,key,value,description"
+call :LOAD_TABLE "counters" "%TEMP_CSV_DIR%\counters.csv" "id,name,current_value,prefix"
+call :LOAD_TABLE "mfcs" "%TEMP_CSV_DIR%\mfcs.csv" "id,name,address,phone"
+call :LOAD_TABLE "applicants" "%TEMP_CSV_DIR%\applicants.csv" "id,owner_id,full_name,birth_date,document_type,document_number,document_issue_date,document_issuer"
+call :LOAD_TABLE "documents" "%TEMP_CSV_DIR%\documents.csv" "id,applicant_id,document_type,document_number,issue_date,issuer"
+call :LOAD_TABLE "action_log" "%TEMP_CSV_DIR%\action_log.csv" "id,created_at,user_id,action_type,table_name,record_id,old_values,new_values"
 
 echo.
 echo ====================================================
@@ -194,12 +215,14 @@ echo ====================================================
 echo.
 echo Важно: После миграции проверьте данные в базе:
 echo   "%PG_BIN%\psql.exe" -U %PG_USER% -d %DB_NAME% -c "SELECT COUNT(*) FROM cards;"
+echo   "%PG_BIN%\psql.exe" -U %PG_USER% -d %DB_NAME% -c "SELECT COUNT(*) FROM card_types;"
+echo   "%PG_BIN%\psql.exe" -U %PG_USER% -d %DB_NAME% -c "SELECT COUNT(*) FROM transactions;"
 echo.
 
 REM Очистка временных файлов
 echo Очистка временных файлов...
 rmdir /s /q "%TEMP_CSV_DIR%"
-del /q "json_to_csv.py"
+if exist "json_to_csv.py" del /q "json_to_csv.py"
 
 echo Готово!
 pause

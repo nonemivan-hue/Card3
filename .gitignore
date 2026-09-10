@@ -1,55 +1,54 @@
 ```
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
 # Environment
 .env
 .env.local
 *.env.*
 
-# Dependencies
-node_modules/
-.venv/
-venv/
-__pycache__/
-.mypy_cache/
-.pytest_cache/
-.julia/
-.zig-cache/
-
-# Build artifacts
-dist/
-build/
-target/
-*.pyc
-*.class
-*.o
-*.obj
-*.exe
-*.dll
-*.so
-*.a
-*.out
-
-# Logs and temporary files
-*.log
-*.tmp
-*.swp
-*.swo
-
-# Editor/IDE
+# Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# System files
-.DS_Store
-Thumbs.db
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+.env/
+pyproject.toml.swp
+
+# Build and distribution
+dist/
+build/
+*.egg-info/
+.installed.cfg
+*.egg
 
 # Coverage
-coverage/
-htmlcov/
 .coverage
+htmlcov/
+.coverage.*
+coverage.xml
 
-# Compressed files
+# Testing
+.pytest_cache/
+.hypothesis/
+
+# MyPy
+.mypy_cache/
+
+# Compression
 *.zip
 *.gz
 *.tar
