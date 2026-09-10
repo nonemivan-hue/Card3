@@ -178,7 +178,10 @@ class PostgreSQLStorage:
 
     def update(self, name, predicate, updates):
         table = self.TABLE_MAP.get(name, name)
-        updates["updated_at"] = datetime.now().isoformat()
+        
+        # Only add updated_at if the table is not 'constants' or 'counters'
+        if table not in ("constants", "counters", "action_log"):
+            updates["updated_at"] = datetime.now().isoformat()
 
         items = self.load_all(name)
         for item in items:
