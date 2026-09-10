@@ -192,7 +192,10 @@ def get_employee_by_id(e_id):
                         result = dict(zip(columns, row))
                         return _deserialize_json_fields("employees", result)
                     return None
-        except Exception:
+        except Exception as e:
+            # Log the error but don't swallow it silently
+            import logging
+            logging.error(f"Failed to get employee {e_id} from PostgreSQL: {e}")
             pass
     # Fallback to find_one
     return find_one("employees", lambda e: e.get("id") == e_id)
@@ -212,7 +215,10 @@ def get_employee_by_login(login):
                         result = dict(zip(columns, row))
                         return _deserialize_json_fields("employees", result)
                     return None
-        except Exception:
+        except Exception as e:
+            # Log the error but don't swallow it silently
+            import logging
+            logging.error(f"Failed to get employee by login {login} from PostgreSQL: {e}")
             pass
     # Fallback to find_one
     return find_one("employees", lambda e: e.get("login") == login)

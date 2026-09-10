@@ -37,9 +37,10 @@ os.environ["DB_USER"] = DB_CONFIG["user"]
 os.environ["DB_PASSWORD"] = DB_CONFIG["password"]
 
 # Determine storage backend: PostgreSQL or local JSON
-USE_POSTGRES = True  # Force PostgreSQL for card_system
+USE_POSTGRES = False  # Default to local JSON, enable only if PostgreSQL is available
 try:
     from postgres.storage_pg import load_all, save_all, insert, update, delete, get_next_number, find_one
+    USE_POSTGRES = True  # Successfully imported PostgreSQL storage
 except ImportError:
     # Fallback to JSON storage if psycopg2 is not available
     from app.storage import load_all, save_all, insert, update, delete, get_next_number, find_one
