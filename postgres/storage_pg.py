@@ -118,9 +118,12 @@ class PostgreSQLStorage:
             with get_cursor(dict_cursor=True) as cur:
                 # Documents should be ordered by doc_date DESC (newest first)
                 if table == "documents":
-                    cur.execute(f"SELECT * FROM {table} ORDER BY doc_date DESC, created_at DESC")
+                    cur.execute(f"SELECT * FROM {table} ORDER BY doc_date DESC, id DESC")
+                elif table in ("action_log", "constants"):
+                    # These tables may not have created_at column, order by id
+                    cur.execute(f"SELECT * FROM {table} ORDER BY id DESC")
                 else:
-                    cur.execute(f"SELECT * FROM {table} ORDER BY created_at")
+                    cur.execute(f"SELECT * FROM {table} ORDER BY created_at DESC")
                 rows = cur.fetchall()
                 duration_ms = (time.time() - start_time) * 1000
                 if LOGGING_ENABLED:
