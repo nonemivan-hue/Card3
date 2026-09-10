@@ -219422,5 +219422,21 @@
     "timestamp": "2026-08-31T11:43:44.557650",
     "id": "e0fdd326-9510-46cc-aa0e-9f5cf2d537ab",
     "created_at": "2026-08-31T11:43:44.699870"
+  },
+  {
+    "user_id": "test-user-123",
+    "action": "TEST_ACTION",
+    "details": "Testing logging to file",
+    "timestamp": "2026-09-10T13:37:14.003761",
+    "id": "8375cce0-ca4e-49ef-ae3b-bd1354b96507",
+    "created_at": "2026-09-10T13:37:14.131084"
+  },
+  {
+    "user_id": "admin-user",
+    "action": "SYSTEM_TEST",
+    "details": "Testing logging system",
+    "timestamp": "2026-09-10T13:37:46.205381",
+    "id": "076f0a2f-6aac-45f2-add9-7cce5e27b76d",
+    "created_at": "2026-09-10T13:37:46.295062"
   }
 ]
