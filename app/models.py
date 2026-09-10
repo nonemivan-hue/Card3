@@ -237,8 +237,8 @@ def get_documents(doc_type=None, date_from=None, date_to=None):
         docs = [d for d in docs if d.get("doc_date", "") >= date_from]
     if date_to:
         docs = [d for d in docs if d.get("doc_date", "") <= date_to]
-    # Documents are already sorted by doc_date DESC from PostgreSQL storage
-    # No need to sort again
+    # Explicit sort by doc_date DESC (newest first), handle None/empty values
+    docs.sort(key=lambda d: d.get("doc_date") or "", reverse=True)
     return docs
 
 
