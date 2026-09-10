@@ -1,0 +1,14 @@
+2026-09-10 13:37:04 | INFO     | Test log message
+2026-09-10 13:37:14 | INFO     | DB_OPERATION | table=employees | op=SELECT | duration=0.14ms
+2026-09-10 13:37:14 | INFO     | DB_OPERATION | table=constants | op=SELECT | duration=0.15ms
+2026-09-10 13:37:14 | INFO     | DB_OPERATION | table=action_log | op=SELECT | duration=127.00ms
+2026-09-10 13:37:14 | INFO     | DB_OPERATION | table=action_log | op=SAVE | duration=208.11ms
+2026-09-10 13:37:14 | INFO     | DB_OPERATION | table=action_log | op=INSERT
+2026-09-10 13:37:14 | INFO     | USER_ACTION | user_id=test-user-123 | action=TEST_ACTION | details=Testing logging to file | ip=
+2026-09-10 13:37:46 | INFO     | DB_OPERATION | table=employees | op=SELECT | duration=0.10ms
+2026-09-10 13:37:46 | INFO     | DB_OPERATION | table=constants | op=SELECT | duration=0.04ms
+2026-09-10 13:37:46 | INFO     | DB_OPERATION | table=action_log | op=SELECT | duration=89.41ms
+2026-09-10 13:37:46 | INFO     | DB_OPERATION | table=action_log | op=SAVE | duration=211.87ms
+2026-09-10 13:37:46 | INFO     | DB_OPERATION | table=action_log | op=INSERT
+2026-09-10 13:37:46 | INFO     | USER_ACTION | user_id=admin-user | action=SYSTEM_TEST | details=Testing logging system | ip=
+2026-09-10 13:37:46 | INFO     | DB_OPERATION | table=cards | op=SELECT | duration=62.30ms

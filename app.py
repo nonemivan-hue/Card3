@@ -19,15 +19,29 @@ UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
 os.makedirs(BACKUP_DIR, exist_ok=True)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+# PostgreSQL configuration for card_system database
+DB_CONFIG = {
+    "host": "localhost",
+    "port": 5432,
+    "database": "card_system",
+    "user": "postgres",
+    "password": "3831043",
+}
+
+# Set environment variables for PostgreSQL storage
+os.environ["USE_POSTGRES"] = "true"
+os.environ["DB_HOST"] = DB_CONFIG["host"]
+os.environ["DB_PORT"] = str(DB_CONFIG["port"])
+os.environ["DB_NAME"] = DB_CONFIG["database"]
+os.environ["DB_USER"] = DB_CONFIG["user"]
+os.environ["DB_PASSWORD"] = DB_CONFIG["password"]
+
 # Determine storage backend: PostgreSQL or local JSON
-USE_POSTGRES = os.environ.get("USE_POSTGRES", "").lower() == "true"
-if USE_POSTGRES:
-    try:
-        from postgres.storage_pg import load_all, save_all, insert, update, delete, get_next_number, find_one
-    except ImportError:
-        # Fallback to JSON storage if psycopg2 is not available
-        from app.storage import load_all, save_all, insert, update, delete, get_next_number, find_one
-else:
+USE_POSTGRES = True  # Force PostgreSQL for card_system
+try:
+    from postgres.storage_pg import load_all, save_all, insert, update, delete, get_next_number, find_one
+except ImportError:
+    # Fallback to JSON storage if psycopg2 is not available
     from app.storage import load_all, save_all, insert, update, delete, get_next_number, find_one
 
 from app.models import (
