@@ -7,6 +7,13 @@ from app.storage import (
 from datetime import datetime
 from app.logger import log_user_action, log_db_query, log_error, log_performance_metric
 
+# Try to import PostgreSQL helpers for direct queries
+try:
+    from postgres.storage_pg import get_connection, _deserialize_json_fields
+    PG_AVAILABLE = True
+except ImportError:
+    PG_AVAILABLE = False
+
 
 # ============== CONSTANTS ==============
 CARD_STATUSES = {
@@ -172,10 +179,42 @@ def get_employees():
 
 
 def get_employee_by_id(e_id):
+    # Use direct SQL query for PostgreSQL if available
+    if PG_AVAILABLE:
+        try:
+            with get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT * FROM employees WHERE id = %s", (e_id,))
+                    row = cur.fetchone()
+                    if row:
+                        # Convert row to dict
+                        columns = [desc[0] for desc in cur.description]
+                        result = dict(zip(columns, row))
+                        return _deserialize_json_fields("employees", result)
+                    return None
+        except Exception:
+            pass
+    # Fallback to find_one
     return find_one("employees", lambda e: e.get("id") == e_id)
 
 
 def get_employee_by_login(login):
+    # Use direct SQL query for PostgreSQL if available
+    if PG_AVAILABLE:
+        try:
+            with get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT * FROM employees WHERE login = %s", (login,))
+                    row = cur.fetchone()
+                    if row:
+                        # Convert row to dict
+                        columns = [desc[0] for desc in cur.description]
+                        result = dict(zip(columns, row))
+                        return _deserialize_json_fields("employees", result)
+                    return None
+        except Exception:
+            pass
+    # Fallback to find_one
     return find_one("employees", lambda e: e.get("login") == login)
 
 

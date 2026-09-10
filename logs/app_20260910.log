@@ -12,3 +12,40 @@
 2026-09-10 13:37:46 | INFO     | DB_OPERATION | table=action_log | op=INSERT
 2026-09-10 13:37:46 | INFO     | USER_ACTION | user_id=admin-user | action=SYSTEM_TEST | details=Testing logging system | ip=
 2026-09-10 13:37:46 | INFO     | DB_OPERATION | table=cards | op=SELECT | duration=62.30ms
+2026-09-10 16:09:08 | INFO     | DB_OPERATION | table=employees | op=SELECT | duration=0.08ms
+2026-09-10 16:09:08 | INFO     | DB_OPERATION | table=constants | op=SELECT | duration=0.03ms
+2026-09-10 16:09:08 | INFO     | DB_OPERATION | table=employees | op=SELECT | duration=0.09ms
+2026-09-10 16:09:08 | INFO     | DB_OPERATION | table=employees | op=FIND_ONE | duration=0.23ms
+2026-09-10 16:09:15 | INFO     | DB_OPERATION | table=employees | op=SELECT | duration=0.08ms
+2026-09-10 16:09:15 | INFO     | DB_OPERATION | table=constants | op=SELECT | duration=0.04ms
+2026-09-10 16:09:15 | INFO     | DB_OPERATION | table=employees | op=SELECT | duration=0.10ms
+2026-09-10 16:09:15 | INFO     | DB_OPERATION | table=employees | op=FIND_ONE | duration=0.25ms
+2026-09-10 16:09:26 | ERROR    | ERROR | context=load_all(employees) | connection to server at "localhost" (::1), port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+ | table=employees
+Traceback (most recent call last):
+  File "/workspace/postgres/storage_pg.py", line 118, in load_all
+    with get_cursor(dict_cursor=True) as cur:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "/workspace/postgres/storage_pg.py", line 61, in get_cursor
+    with get_connection() as conn:
+         ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "/workspace/postgres/storage_pg.py", line 49, in get_connection
+    conn = psycopg2.connect(**DB_CONFIG)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/psycopg2/__init__.py", line 122, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.OperationalError: connection to server at "localhost" (::1), port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+
