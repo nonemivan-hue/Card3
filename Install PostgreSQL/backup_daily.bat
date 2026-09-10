@@ -4,19 +4,19 @@ REM Сохраните этот файл в папке C:\PostgreSQL\Backups\ и
 
 REM ==================== НАСТРОЙКИ ====================
 REM Путь к бинарным файлам PostgreSQL (измените версию при необходимости)
-set PG_BIN=C:\Program Files\PostgreSQL\16\bin
+set PG_BIN=D:\PostgreSQL\15\bin
 
 REM Пользователь PostgreSQL
 set PG_USER=postgres
 
-REM Пароль пользователя postgres (ЗАМЕНИТЕ на ваш пароль!)
-set PG_PASSWORD=your_postgres_password
+REM Пароль пользователя postgres
+set PG_PASSWORD=3831043
 
 REM Имя базы данных для резервного копирования
 set DB_NAME=card_system
 
 REM Директория для хранения резервных копий
-set BACKUP_DIR=C:\PostgreSQL\Backups
+set BACKUP_DIR=D:\PostgreSQL\Backups
 
 REM Количество дней хранения резервных копий
 set RETENTION_DAYS=7
