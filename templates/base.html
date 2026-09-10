@@ -161,6 +161,20 @@
             <a href="{{ url_for('change_password') }}" class="text-white opacity-75 d-block mb-1"><i class="bi bi-key"></i> Сменить пароль</a>
             <a href="{{ url_for('logout') }}" class="text-white opacity-75"><i class="bi bi-box-arrow-right"></i> Выход</a>
             
+            <!-- Database connection indicator -->
+            <div class="mt-2 pt-2 border-top border-secondary">
+                <small class="text-uppercase" style="font-size:0.65rem;opacity:0.5;">Подключение к БД</small>
+                <div class="mt-1">
+                    {% if db_backend == 'postgres' %}
+                        <span class="badge bg-success"><i class="bi bi-database"></i> PostgreSQL</span>
+                    {% elif db_backend == 'mysql' %}
+                        <span class="badge bg-info"><i class="bi bi-database"></i> MySQL</span>
+                    {% else %}
+                        <span class="badge bg-secondary"><i class="bi bi-folder"></i> Локальная (Data)</span>
+                    {% endif %}
+                </div>
+            </div>
+            
             {% if active_users and active_users|length > 0 %}
             <div class="mt-2 pt-2 border-top border-secondary">
                 <small class="text-uppercase" style="font-size:0.65rem;opacity:0.5;">Активные пользователи</small>
