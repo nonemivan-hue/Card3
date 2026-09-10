@@ -138,6 +138,43 @@ class PostgreSQLStorage:
         pass
 
     def find_one(self, name, predicate):
+        # Optimize for employees table by querying directly with ID
+        if name == "employees":
+            # Extract the ID from the predicate if it's a simple equality check
+            e_id = None
+            if callable(predicate):
+                # Try to extract the ID from a lambda like: lambda e: e.get("id") == e_id
+                # This is a bit hacky but works for our common use case
+                import inspect
+                try:
+                    source = inspect.getsource(predicate)
+                    if 'e.get("id") ==' in source or "e.get('id') ==" in source:
+                        # Extract the ID value from the source
+                        parts = source.split('==')
+                        if len(parts) > 1:
+                            id_part = parts[1].strip().strip('\'"')
+                            if len(id_part) == 36 and id_part.count('-') == 4:
+                                e_id = id_part
+                except:
+                    pass
+            
+            if e_id:
+                table = self.TABLE_MAP.get(name, name)
+                start_time = time.time()
+                try:
+                    with get_cursor(dict_cursor=True) as cur:
+                        cur.execute(f"SELECT * FROM {table} WHERE id = %s", (e_id,))
+                        row = cur.fetchone()
+                        duration_ms = (time.time() - start_time) * 1000
+                        if LOGGING_ENABLED:
+                            log_db_query(table, "FIND_ONE", duration_ms)
+                        return _deserialize_json_fields(table, dict(row)) if row else None
+                except Exception as e:
+                    if LOGGING_ENABLED:
+                        log_error(e, f"find_one({name})", {"table": table})
+                    raise
+        
+        # Fallback to loading all and filtering
         items = self.load_all(name)
         for item in items:
             if predicate(item):
