@@ -19,7 +19,17 @@ UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
 os.makedirs(BACKUP_DIR, exist_ok=True)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-from app.storage import load_all, save_all, insert, update, delete, get_next_number, find_one
+# Determine storage backend: PostgreSQL or local JSON
+USE_POSTGRES = os.environ.get("USE_POSTGRES", "").lower() == "true"
+if USE_POSTGRES:
+    try:
+        from postgres.storage_pg import load_all, save_all, insert, update, delete, get_next_number, find_one
+    except ImportError:
+        # Fallback to JSON storage if psycopg2 is not available
+        from app.storage import load_all, save_all, insert, update, delete, get_next_number, find_one
+else:
+    from app.storage import load_all, save_all, insert, update, delete, get_next_number, find_one
+
 from app.models import (
     get_cards, get_card_by_number, create_or_update_card,
     get_card_types, get_card_type_by_id, get_card_type_by_name,
@@ -110,6 +120,22 @@ def inject_globals():
     # Get active users for display
     from app.models import get_active_users
     active_users = get_active_users()
+    
+    # Determine database backend
+    db_backend = 'local'  # default to local JSON storage
+    try:
+        # Check if PostgreSQL storage is being used
+        import os
+        if os.environ.get("USE_POSTGRES", "").lower() == "true":
+            db_backend = 'postgres'
+        elif os.environ.get("DB_HOST") or os.environ.get("DB_NAME"):
+            db_backend = 'postgres'
+        # Check for MySQL (if implemented)
+        elif os.environ.get("USE_MYSQL", "").lower() == "true":
+            db_backend = 'mysql'
+    except Exception:
+        pass
+    
     return {
         "card_statuses": CARD_STATUSES,
         "document_types": DOCUMENT_TYPES,
@@ -118,7 +144,8 @@ def inject_globals():
         "is_admin": user and "admin" in user.get("roles", []),
         "is_issue_user": is_issue_user(),
         "is_reports_user": is_reports_user(),
-        "active_users": active_users
+        "active_users": active_users,
+        "db_backend": db_backend
     }
 
 
