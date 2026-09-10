@@ -1,5 +1,9 @@
-The provided input shows only an added file named `"Install` which appears to be malformed or incomplete. Since there are no recognizable build artifacts, dependency directories, temporary files, or other ignorable patterns in the changes, and the filename doesn't match any common ignore patterns, no entries need to be added to the .gitignore file.
+```
+# System files
+.DS_Store
+Thumbs.db
 
+# Environment variables
 (empty)
 ```
 # Environment files
@@ -12,12 +16,35 @@ The provided input shows only an added file named `"Install` which appears to be
 *.tmp
 *.swp
 
+# Editors
 # Editors/IDE
 .vscode/
 .idea/
 
 # Dependencies
 node_modules/
+venv/
+.venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+dist/
+build/
+target/
+.gradle/
+
+# Compiled files
+*.pyc
+*.class
+*.o
+*.exe
+*.dll
+*.so
+*.a
+*.obj
+*.out
+
+# Coverage
 # Environment
 .env
 .env.local
@@ -44,6 +71,30 @@ coverage/
 htmlcov/
 .coverage
 
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+```
 # Python specific
 *.pyo
 *.pyd
