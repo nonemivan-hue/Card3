@@ -15,12 +15,19 @@
 
 # Dependencies
 node_modules/
+# Environment
+.env
+.env.local
+.env.*
+
+# Dependencies
 .venv/
 venv/
 __pycache__/
 *.pyc
 
 # Build/dist artifacts
+# Build artifacts
 dist/
 build/
 target/
@@ -40,4 +47,15 @@ htmlcov/
 .Python
 *.so
 *.egg-info/
+# Logs and temp files
+*.log
+*.tmp
+
+# Editors
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
 ```
