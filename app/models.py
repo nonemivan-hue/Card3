@@ -5,6 +5,7 @@ from app.storage import (
     load_all, save_all, find_one, find_many, insert, update, delete, get_next_number
 )
 from datetime import datetime
+from app.logger import log_user_action, log_db_query, log_error, log_performance_metric
 
 
 # ============== CONSTANTS ==============
@@ -42,12 +43,16 @@ def now_iso():
 
 
 def log_action(user_id, action, details=""):
+    """Log action to both database and file."""
+    # Log to database
     insert("action_log", {
         "user_id": user_id,
         "action": action,
         "details": details,
         "timestamp": now_iso()
     })
+    # Log to file
+    log_user_action(str(user_id), action, details)
 
 
 # ============== CARD REFERENCE ==============

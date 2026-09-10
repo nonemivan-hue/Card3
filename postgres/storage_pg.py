@@ -10,6 +10,7 @@ Usage:
 import os
 import uuid
 import json
+import time
 from datetime import datetime
 from contextlib import contextmanager
 
@@ -18,6 +19,13 @@ try:
     from psycopg2.extras import RealDictCursor
 except ImportError:
     raise ImportError("psycopg2 is required. Install: pip install psycopg2-binary")
+
+# Import logging for database operations
+try:
+    from app.logger import log_db_query, log_error, log_performance_metric
+    LOGGING_ENABLED = True
+except ImportError:
+    LOGGING_ENABLED = False
 
 # ============== JSON ADAPTERS ==============#
 
@@ -105,10 +113,19 @@ class PostgreSQLStorage:
 
     def load_all(self, name):
         table = self.TABLE_MAP.get(name, name)
-        with get_cursor(dict_cursor=True) as cur:
-            cur.execute(f"SELECT * FROM {table} ORDER BY created_at")
-            rows = cur.fetchall()
-            return [_deserialize_json_fields(table, dict(row)) for row in rows]
+        start_time = time.time()
+        try:
+            with get_cursor(dict_cursor=True) as cur:
+                cur.execute(f"SELECT * FROM {table} ORDER BY created_at")
+                rows = cur.fetchall()
+                duration_ms = (time.time() - start_time) * 1000
+                if LOGGING_ENABLED:
+                    log_db_query(table, "SELECT", duration_ms)
+                return [_deserialize_json_fields(table, dict(row)) for row in rows]
+        except Exception as e:
+            if LOGGING_ENABLED:
+                log_error(e, f"load_all({name})", {"table": table})
+            raise
 
     def save_all(self, name, data):
         pass
@@ -138,10 +155,19 @@ class PostgreSQLStorage:
 
         sql = f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({', '.join(placeholders)}) RETURNING *"
 
-        with get_cursor(dict_cursor=True) as cur:
-            cur.execute(sql, values)
-            row = cur.fetchone()
-            return _deserialize_json_fields(table, dict(row)) if row else item
+        start_time = time.time()
+        try:
+            with get_cursor(dict_cursor=True) as cur:
+                cur.execute(sql, values)
+                row = cur.fetchone()
+                duration_ms = (time.time() - start_time) * 1000
+                if LOGGING_ENABLED:
+                    log_db_query(table, "INSERT", duration_ms)
+                return _deserialize_json_fields(table, dict(row)) if row else item
+        except Exception as e:
+            if LOGGING_ENABLED:
+                log_error(e, f"insert({name})", {"table": table, "item_id": item.get("id")})
+            raise
 
     def update(self, name, predicate, updates):
         table = self.TABLE_MAP.get(name, name)
@@ -155,8 +181,17 @@ class PostgreSQLStorage:
                 sql = f"UPDATE {table} SET {set_clause} WHERE id = %s"
                 values = list(serialized_updates.values()) + [item["id"]]
 
-                with get_cursor() as cur:
-                    cur.execute(sql, values)
+                start_time = time.time()
+                try:
+                    with get_cursor() as cur:
+                        cur.execute(sql, values)
+                        duration_ms = (time.time() - start_time) * 1000
+                        if LOGGING_ENABLED:
+                            log_db_query(table, "UPDATE", duration_ms)
+                except Exception as e:
+                    if LOGGING_ENABLED:
+                        log_error(e, f"update({name})", {"table": table, "item_id": item["id"]})
+                    raise
 
                 item.update(updates)
                 return item
@@ -168,28 +203,46 @@ class PostgreSQLStorage:
         for item in items:
             if predicate(item):
                 sql = f"DELETE FROM {table} WHERE id = %s"
-                with get_cursor() as cur:
-                    cur.execute(sql, (item["id"],))
+                start_time = time.time()
+                try:
+                    with get_cursor() as cur:
+                        cur.execute(sql, (item["id"],))
+                        duration_ms = (time.time() - start_time) * 1000
+                        if LOGGING_ENABLED:
+                            log_db_query(table, "DELETE", duration_ms)
+                except Exception as e:
+                    if LOGGING_ENABLED:
+                        log_error(e, f"delete({name})", {"table": table, "item_id": item["id"]})
+                    raise
 
     def get_next_number(self, prefix, name="counters"):
         table = self.TABLE_MAP.get(name, name)
-        with get_connection() as conn:
-            cur = conn.cursor()
-            cur.execute("SELECT pg_advisory_lock(hashtext(%s))", (prefix,))
-            try:
-                cur.execute(f"SELECT value FROM {table} WHERE prefix = %s FOR UPDATE", (prefix,))
-                row = cur.fetchone()
-                if row:
-                    value = row[0] + 1
-                    cur.execute(f"UPDATE {table} SET value = %s WHERE prefix = %s", (value, prefix))
-                else:
-                    value = 1
-                    cur.execute(f"INSERT INTO {table} (prefix, value) VALUES (%s, %s)", (prefix, value))
-                conn.commit()
-                return f"{prefix}-{value:06d}"
-            finally:
-                cur.execute("SELECT pg_advisory_unlock(hashtext(%s))", (prefix,))
-                cur.close()
+        start_time = time.time()
+        try:
+            with get_connection() as conn:
+                cur = conn.cursor()
+                cur.execute("SELECT pg_advisory_lock(hashtext(%s))", (prefix,))
+                try:
+                    cur.execute(f"SELECT value FROM {table} WHERE prefix = %s FOR UPDATE", (prefix,))
+                    row = cur.fetchone()
+                    if row:
+                        value = row[0] + 1
+                        cur.execute(f"UPDATE {table} SET value = %s WHERE prefix = %s", (value, prefix))
+                    else:
+                        value = 1
+                        cur.execute(f"INSERT INTO {table} (prefix, value) VALUES (%s, %s)", (prefix, value))
+                    conn.commit()
+                    duration_ms = (time.time() - start_time) * 1000
+                    if LOGGING_ENABLED:
+                        log_db_query(table, "GET_NEXT_NUMBER", duration_ms)
+                    return f"{prefix}-{value:06d}"
+                finally:
+                    cur.execute("SELECT pg_advisory_unlock(hashtext(%s))", (prefix,))
+                    cur.close()
+        except Exception as e:
+            if LOGGING_ENABLED:
+                log_error(e, f"get_next_number({prefix})", {"table": table})
+            raise
 
 # ============== COMPATIBILITY FUNCTIONS ==============#
 
