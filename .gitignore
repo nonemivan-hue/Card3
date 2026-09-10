@@ -1,5 +1,6 @@
 ```
 # Compiled Python files
+# Compiled and build artifacts
 *.pyc
 __pycache__/
 
@@ -9,11 +10,13 @@ venv/
 node_modules/
 
 # Logs and temporary files
+# Logs and temp files
 *.log
 *.tmp
 *.swp
 
 # Environment files
+# Environment
 .env
 .env.local
 *.env.*
@@ -39,4 +42,6 @@ Thumbs.db
 # Testing
 .pytest_cache/
 .mypy_cache/
+# Original rules preserved
+*.log
 ```
