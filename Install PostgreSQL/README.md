@@ -20,8 +20,9 @@
 - Операционная система: Windows 10/11 или Windows Server 2016/2019/2022
 - Права администратора на компьютере
 - Свободное место на диске: минимум 2 ГБ
-- PostgreSQL версии 14 или выше (рекомендуется последняя стабильная версия)
+- PostgreSQL версии 15 (установлен в `D:\PostgreSQL\15`)
 - Python 3.8+ (если используется приложение с Python)
+- Приложение установлено в `D:\card`
 
 ---
 
@@ -30,15 +31,15 @@
 ### Шаг 1: Скачивание установщика
 
 1. Перейдите на официальный сайт PostgreSQL: https://www.postgresql.org/download/windows/
-2. Выберите версию для Windows (рекомендуется последняя стабильная, например, PostgreSQL 16)
+2. Выберите версию для Windows (рекомендуется последняя стабильная, например, PostgreSQL 15)
 3. Скачайте установочный файл `.exe`
 
 ### Шаг 2: Установка PostgreSQL
 
 1. Запустите скачанный установочный файл от имени администратора
 2. Нажмите "Next" на экране приветствия
-3. Оставьте путь установки по умолчанию: `C:\Program Files\PostgreSQL\16\` (или ваша версия)
-4. **Важно:** Запомните пароль, который вы зададите для пользователя `postgres` — он понадобится для настройки
+3. **Важно:** Укажите путь установки: `D:\PostgreSQL\15\`
+4. **Важно:** Запомните пароль, который вы зададите для пользователя `postgres` (в данном случае используется пароль `3831043`) — он понадобится для настройки
 5. Порт оставьте по умолчанию: `5432`
 6. Locale выберите `Russian, Russia` или `English, United States` в зависимости от требований
 7. Нажмите "Next" и дождитесь завершения установки
@@ -49,7 +50,7 @@
 Откройте командную строку (cmd) от имени администратора и выполните:
 
 ```cmd
-"C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres
+"D:\PostgreSQL\15\bin\psql.exe" -U postgres
 ```
 
 Введите пароль, заданный при установке. Если подключились успешно — установка прошла успешно.
@@ -65,15 +66,15 @@
 Откройте командную строку от имени администратора и выполните:
 
 ```cmd
-"C:\Program Files\PostgreSQL\16\bin\createdb.exe" -U postgres card_system
+"D:\PostgreSQL\15\bin\createdb.exe" -U postgres card_system
 ```
 
-Введите пароль пользователя `postgres`.
+Введите пароль пользователя `postgres` (по умолчанию используется `3831043`).
 
 ### Шаг 2: Создание пользователя приложения
 
 ```cmd
-"C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -c "CREATE USER app_user WITH PASSWORD 'your_secure_password';"
+"D:\PostgreSQL\15\bin\psql.exe" -U postgres -c "CREATE USER app_user WITH PASSWORD 'your_secure_password';"
 ```
 
 Замените `your_secure_password` на надежный пароль.
@@ -81,7 +82,7 @@
 ### Шаг 3: Предоставление прав
 
 ```cmd
-"C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE card_system TO app_user;"
+"D:\PostgreSQL\15\bin\psql.exe" -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE card_system TO app_user;"
 ```
 
 ### Шаг 4: Инициализация схемы БД
@@ -89,7 +90,7 @@
 Выполните SQL-скрипт инициализации (файл `init.sql` из корневой папки проекта):
 
 ```cmd
-"C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -d card_system -f "C:\path\to\your\project\postgres\init.sql"
+"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system -f "D:\card\postgres\init.sql"
 ```
 
 Замените путь на актуальный путь к файлу `init.sql`.
@@ -181,7 +182,7 @@ SELECT * FROM your_table;
 REM daily_backup.bat - Скрипт ежедневного резервного копирования PostgreSQL
 
 REM Настройки
-set PG_BIN=C:\Program Files\PostgreSQL\16\bin
+set PG_BIN=D:\PostgreSQL\15\bin
 set PG_USER=postgres
 set PG_PASSWORD=your_postgres_password
 set DB_NAME=card_system
@@ -217,13 +218,13 @@ forfiles /p "%BACKUP_DIR%" /s /m backup_*.sql /d -7 /c "cmd /c del @path"
 Чтобы не вводить пароль каждый раз, можно установить переменную окружения:
 
 ```cmd
-setx PGPASSWORD "your_postgres_password"
+setx PGPASSWORD "3831043"
 ```
 
 Или модифицировать скрипт, добавив перед вызовом pg_dump:
 
 ```batch
-set PGPASSWORD=your_postgres_password
+set PGPASSWORD=3831043
 ```
 
 ### Шаг 3: Планирование задачи в Планировщике заданий Windows
@@ -281,7 +282,7 @@ set PGPASSWORD=your_postgres_password
 ### Проверка подключения к БД
 
 ```cmd
-"C:\Program Files\PostgreSQL\16\bin\psql.exe" -U app_user -d card_system -h localhost
+"D:\PostgreSQL\15\bin\psql.exe" -U app_user -d card_system -h localhost
 ```
 
 ### Проверка наличия данных
@@ -295,13 +296,13 @@ SELECT COUNT(*) FROM cards;
 Восстановление из резервной копии (тестовое):
 
 ```cmd
-"C:\Program Files\PostgreSQL\16\bin\pg_restore.exe" -U postgres -d card_system_test -F c "C:\PostgreSQL\Backups\backup_card_system_YYYYMMDD_HHMM.sql"
+"D:\PostgreSQL\15\bin\pg_restore.exe" -U postgres -d card_system_test -F c "D:\PostgreSQL\Backups\backup_card_system_YYYYMMDD_HHMM.sql"
 ```
 
 Сначала создайте тестовую БД:
 
 ```cmd
-"C:\Program Files\PostgreSQL\16\bin\createdb.exe" -U postgres card_system_test
+"D:\PostgreSQL\15\bin\createdb.exe" -U postgres card_system_test
 ```
 
 ---
@@ -316,7 +317,7 @@ SELECT COUNT(*) FROM cards;
    ```cmd
    psql -U postgres -c "\du"
    ```
-3. Проверьте файл `pg_hba.conf` (обычно в `C:\Program Files\PostgreSQL\16\data\`):
+3. Проверьте файл `pg_hba.conf` (обычно в `D:\PostgreSQL\15\data\`):
    - Убедитесь, что есть строка: `host all all 127.0.0.1/32 scram-sha-256`
    - После изменений перезапустите службу PostgreSQL
 
@@ -324,9 +325,9 @@ SELECT COUNT(*) FROM cards;
 
 **Решение:**
 1. Откройте "Службы" (`services.msc`)
-2. Найдите службу `postgresql-x64-16` (или ваша версия)
+2. Найдите службу `postgresql-x64-15` (или ваша версия)
 3. Попробуйте запустить вручную
-4. Проверьте логи в `C:\Program Files\PostgreSQL\16\data\log\`
+4. Проверьте логи в `D:\PostgreSQL\15\data\log\`
 
 ### Проблема: Задача в Планировщике не выполняется
 
@@ -342,7 +343,7 @@ SELECT COUNT(*) FROM cards;
 - Укажите полный путь к исполняемому файлу в скрипте
 - Или добавьте путь в системную переменную PATH:
   ```cmd
-  setx PATH "%PATH%;C:\Program Files\PostgreSQL\16\bin"
+  setx PATH "%PATH%;D:\PostgreSQL\15\bin"
   ```
 
 ---
@@ -360,4 +361,4 @@ SELECT COUNT(*) FROM cards;
 ---
 
 **Дата обновления инструкции:** 2024
-**Версия PostgreSQL:** 16.x (адаптируется под вашу версию)
+**Версия PostgreSQL:** 15.x (адаптируется под вашу версию)

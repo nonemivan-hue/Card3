@@ -7,11 +7,11 @@ SETLOCAL EnableDelayedExpansion
 REM ============================================
 REM НАСТРОЙКИ (измените под вашу систему)
 REM ============================================
-set PG_BIN=C:\Program Files\PostgreSQL\16\bin
+set PG_BIN=D:\PostgreSQL\15\bin
 set PG_USER=postgres
-set PG_PASSWORD=your_postgres_password
+set PG_PASSWORD=3831043
 set DB_NAME=card_system
-set DATA_DIR=C:\path\to\your\project\data
+set DATA_DIR=D:\card\data
 
 REM Переопределение параметров из командной строки (если переданы)
 if not "%~1"=="" set DATA_DIR=%~1

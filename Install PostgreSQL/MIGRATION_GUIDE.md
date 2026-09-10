@@ -46,7 +46,7 @@ Data/
 Перед загрузкой данных необходимо создать структуру таблиц:
 
 ```cmd
-"C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -d card_system -f "path\to\postgres\init.sql"
+"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system -f "D:\card\postgres\init.sql"
 ```
 
 ### Шаг 3: Настройка переменных окружения
@@ -54,11 +54,11 @@ Data/
 Для удобства установите переменные окружения:
 
 ```cmd
-setx PG_BIN "C:\Program Files\PostgreSQL\16\bin"
+setx PG_BIN "D:\PostgreSQL\15\bin"
 setx PG_USER "postgres"
-setx PG_PASSWORD "your_password"
+setx PG_PASSWORD "3831043"
 setx DB_NAME "card_system"
-setx DATA_DIR "C:\path\to\your\project\data"
+setx DATA_DIR "D:\card\data"
 ```
 
 **Важно:** После установки переменных перезапустите командную строку.
@@ -148,7 +148,7 @@ python "Install PostgreSQL\json_to_csv.py" --dir data --output csv_output
 #### Вариант A: Через psql \copy
 
 ```cmd
-"C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -d card_system -c "\copy card_types FROM 'csv_output/card_types.csv' WITH CSV HEADER ENCODING 'UTF8';"
+"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system -c "\copy card_types FROM 'csv_output/card_types.csv' WITH CSV HEADER ENCODING 'UTF8';"
 ```
 
 #### Вариант B: Через SQL команду COPY
@@ -177,7 +177,7 @@ FROM 'csv_output/documents.csv' WITH CSV HEADER ENCODING 'UTF8';
 Выполните скрипт:
 
 ```cmd
-"C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -d card_system -f load_data.sql
+"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system -f load_data.sql
 ```
 
 ---
@@ -208,7 +208,7 @@ FROM 'csv_output/documents.csv' WITH CSV HEADER ENCODING 'UTF8';
 #### Шаг 1: Подключение к базе данных
 
 ```cmd
-"C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -d card_system
+"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system
 ```
 
 #### Шаг 2: Отключение внешних ключей (опционально)
@@ -261,7 +261,7 @@ SELECT setval('action_log_id_seq', (SELECT MAX(id) FROM action_log));
 ### Быстрая проверка количества записей
 
 ```cmd
-"C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -d card_system -c "
+"D:\PostgreSQL\15\bin\psql.exe" -U postgres -d card_system -c "
 SELECT 
     (SELECT COUNT(*) FROM card_types) as card_types,
     (SELECT COUNT(*) FROM owners) as owners,
@@ -309,6 +309,38 @@ wc -l data/cards.json
 ---
 
 ## Устранение неполадок
+
+### Ошибка: "ОШИБКА: лишние данные после содержимого последнего столбца"
+
+**Причина:** В CSV файле больше колонок, чем в таблице PostgreSQL, либо порядок колонок не совпадает.
+
+**Решение 1: Используйте утилиту json_to_csv.py с явным указанием колонок**
+
+Обновленная утилита `json_to_csv.py` автоматически определяет правильный порядок колонок для известных таблиц:
+
+```cmd
+REM Автоматическое определение колонок для известных таблиц
+python "Install PostgreSQL\json_to_csv.py" --dir Data --output csv_output
+
+REM Или вручную для конкретной таблицы
+python "Install PostgreSQL\json_to_csv.py" --table card_types --input Data/card_types.json --output csv/card_types.csv
+```
+
+**Решение 2: Явно укажите список колонок в команде COPY**
+
+```sql
+\COPY card_types(id, name, report_name, created_at, updated_at) 
+FROM 'C:/path/to/csv/card_types.csv' WITH CSV HEADER ENCODING 'UTF8';
+```
+
+**Решение 3: Проверьте CSV файл**
+
+Откройте CSV файл и убедитесь, что:
+- Количество колонок совпадает с таблицей БД
+- Порядок колонок соответствует структуре таблицы
+- Нет лишних запятых в конце строк
+
+---
 
 ### Ошибка: "duplicate key value violates unique constraint"
 
@@ -410,9 +442,9 @@ SELECT * FROM cards LIMIT 10;
 
 При возникновении проблем обратитесь к:
 - Документации PostgreSQL: https://www.postgresql.org/docs/
-- Логи PostgreSQL: `C:\Program Files\PostgreSQL\16\data\log\`
+- Логи PostgreSQL: `D:\PostgreSQL\15\data\log\`
 
 ---
 
 **Дата обновления инструкции:** 2024  
-**Версия PostgreSQL:** 16.x (адаптируется под вашу версию)
+**Версия PostgreSQL:** 15.x (адаптируется под вашу версию)

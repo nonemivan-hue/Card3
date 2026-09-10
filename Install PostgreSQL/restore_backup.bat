@@ -7,9 +7,9 @@ REM ================================================
 setlocal enabledelayedexpansion
 
 REM ==================== НАСТРОЙКИ ====================
-set PG_BIN=C:\Program Files\PostgreSQL\16\bin
+set PG_BIN=D:\PostgreSQL\15\bin
 set PG_USER=postgres
-set PG_PASSWORD=your_postgres_password
+set PG_PASSWORD=3831043
 
 REM Если имя базы данных не передано, используем по умолчанию
 if "%~2"=="" (
