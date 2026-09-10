@@ -664,8 +664,8 @@ def doc_create(doc_type):
             if not current_user:
                 # User doesn't exist, clear session and redirect to login
                 session.clear()
-                flash(\"Сессия недействительна. Пожалуйста, войдите снова.\", \"warning\")
-                return redirect(url_for(\"login\"))
+                flash("Сессия недействительна. Пожалуйста, войдите снова.", "warning")
+                return redirect(url_for("login"))
         
         doc = insert("documents", {
             "doc_type": doc_type,
