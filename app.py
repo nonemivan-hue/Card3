@@ -656,6 +656,17 @@ def doc_create(doc_type):
             })
             idx += 1
 
+        # Get current user and validate they still exist in employees table
+        current_user_id = session.get("user_id")
+        if current_user_id:
+            # Verify the user still exists in employees table
+            current_user = get_employee_by_id(current_user_id)
+            if not current_user:
+                # User doesn't exist, clear session and redirect to login
+                session.clear()
+                flash(\"Сессия недействительна. Пожалуйста, войдите снова.\", \"warning\")
+                return redirect(url_for(\"login\"))
+        
         doc = insert("documents", {
             "doc_type": doc_type,
             "doc_number": request.form.get("doc_number") or get_next_number(DOC_PREFIXES.get(doc_type, "DOC")),
@@ -665,7 +676,7 @@ def doc_create(doc_type):
             "employee_id": request.form.get("employee_id") or None,
             "lines": lines,
             "status": "draft",
-            "created_by": session.get("user_id"),
+            "created_by": current_user_id,
             "created_at": now_iso()
         })
         flash("Документ создан", "success")
@@ -1005,16 +1016,25 @@ def doc_upload_excel(doc_type):
     if lines is None:
         return redirect(url_for("doc_create", doc_type=doc_type))
 
+    # Get current user and validate they still exist in employees table
+    current_user_id = session.get("user_id")
+    if current_user_id:
+        current_user = get_employee_by_id(current_user_id)
+        if not current_user:
+            session.clear()
+            flash("Сессия недействительна. Пожалуйста, войдите снова.", "warning")
+            return redirect(url_for("login"))
+
     doc = insert("documents", {
         "doc_type": doc_type,
         "doc_number": get_next_number(DOC_PREFIXES.get(doc_type, "DOC")),
         "doc_date": datetime.now().strftime("%Y-%m-%d"),
-        "organization_id": request.form.get("organization_id", ""),
-        "mfc_id": request.form.get("mfc_id", ""),
-        "employee_id": request.form.get("employee_id", ""),
+        "organization_id": request.form.get("organization_id") or None,
+        "mfc_id": request.form.get("mfc_id") or None,
+        "employee_id": request.form.get("employee_id") or None,
         "lines": lines,
         "status": "draft",
-        "created_by": session.get("user_id"),
+        "created_by": current_user_id,
         "created_at": now_iso()
     })
     flash(f"Документ создан, загружено {len(lines)} строк из Excel", "success")
