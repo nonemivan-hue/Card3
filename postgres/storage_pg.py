@@ -34,16 +34,7 @@ DB_CONFIG = {
     "database": os.environ.get("DB_NAME", "transport_cards"),
     "user": os.environ.get("DB_USER", "postgres"),
     "password": os.environ.get("DB_PASSWORD", "postgres"),
-    "encoding": "utf8",
 }
-
-# Ensure all string values are properly decoded as UTF-8
-for key in DB_CONFIG:
-    if isinstance(DB_CONFIG[key], str):
-        try:
-            DB_CONFIG[key] = DB_CONFIG[key].encode('utf-8').decode('utf-8')
-        except UnicodeEncodeError:
-            pass
 
 @contextmanager
 def get_connection():
