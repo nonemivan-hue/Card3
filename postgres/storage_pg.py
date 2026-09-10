@@ -116,7 +116,11 @@ class PostgreSQLStorage:
         start_time = time.time()
         try:
             with get_cursor(dict_cursor=True) as cur:
-                cur.execute(f"SELECT * FROM {table} ORDER BY created_at")
+                # Documents should be ordered by doc_date DESC (newest first)
+                if table == "documents":
+                    cur.execute(f"SELECT * FROM {table} ORDER BY doc_date DESC, created_at DESC")
+                else:
+                    cur.execute(f"SELECT * FROM {table} ORDER BY created_at")
                 rows = cur.fetchall()
                 duration_ms = (time.time() - start_time) * 1000
                 if LOGGING_ENABLED:
